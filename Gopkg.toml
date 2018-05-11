@@ -1,0 +1,16 @@
+
+[[constraint]]
+  name = "github.com/decred/dcrd"
+  version = "1.2.0"
+
+[[constraint]]
+  name = "github.com/jessevdk/go-flags"
+  version = "1.4.0"
+
+[[constraint]]
+  name = "github.com/miekg/dns"
+  version = "1.0.5"
+
+[prune]
+  go-tests = true
+  unused-packages = true
