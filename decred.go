@@ -23,7 +23,7 @@ const (
 
 	// defaultNodeTimeout defines the timeout time waiting for
 	// a response from a node.
-	defaultNodeTimeout = time.Second * 10
+	defaultNodeTimeout = time.Second * 3
 )
 
 var (
@@ -44,25 +44,18 @@ func creep() {
 
 		Listeners: peer.MessageListeners{
 			OnAddr: func(p *peer.Peer, msg *wire.MsgAddr) {
-				log.Printf("Peer %v sent %v addresses",
-					p.Addr(), len(msg.AddrList))
-
 				n := make([]net.IP, 0, len(msg.AddrList))
 				for _, addr := range msg.AddrList {
 					n = append(n, addr.IP)
 				}
-				amgr.AddAddresses(n)
+				added := amgr.AddAddresses(n)
+				log.Printf("Peer %v sent %v addresses, %d new",
+					p.Addr(), len(msg.AddrList), added)
 				onaddr <- struct{}{}
 			},
 			OnVerAck: func(p *peer.Peer, msg *wire.MsgVerAck) {
 				log.Printf("Adding peer %v with services %v",
 					p.NA().IP.String(), p.Services())
-
-				// Mark this peer as a good node.
-				amgr.Good(p.NA().IP, p.Services())
-
-				// Ask peer for some addresses.
-				p.QueueMessage(wire.NewMsgGetAddr(), nil)
 
 				verack <- struct{}{}
 			},
@@ -106,6 +99,12 @@ func creep() {
 				// failure.
 				select {
 				case <-verack:
+					// Mark this peer as a good node.
+					amgr.Good(p.NA().IP, p.Services())
+
+					// Ask peer for some addresses.
+					p.QueueMessage(wire.NewMsgGetAddr(), nil)
+
 				case <-time.After(defaultNodeTimeout):
 					log.Printf("verack timeout on peer %v",
 						p.Addr())

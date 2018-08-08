@@ -35,7 +35,7 @@ type config struct {
 	Host       string `short:"H" long:"host" description:"hostname"`
 	Nameserver string `short:"n" long:"nameserver" description:"hostname of nameserver"`
 	Seeder     string `short:"s" long:"default seeder" description:"IP address of a  working node"`
-	TestNet    bool   `long:"testnet" description:"Use the test network"`
+	TestNet    bool   `long:"testnet" description:"Use testnet"`
 }
 
 func loadConfig() (*config, error) {
