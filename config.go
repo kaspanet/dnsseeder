@@ -119,7 +119,7 @@ func loadConfig() (*config, error) {
 	}
 
 	if cfg.TestNet {
-		activeNetParams = &chaincfg.TestNet2Params
+		activeNetParams = &chaincfg.TestNet3Params
 	}
 
 	return &cfg, nil

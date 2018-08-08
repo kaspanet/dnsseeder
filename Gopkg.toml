@@ -1,7 +1,7 @@
 
 [[constraint]]
   name = "github.com/decred/dcrd"
-  version = "1.2.0"
+  revision = "8fda21512f3f64f164f0ac10565144341fbf98e1"
 
 [[constraint]]
   name = "github.com/jessevdk/go-flags"
@@ -9,7 +9,7 @@
 
 [[constraint]]
   name = "github.com/miekg/dns"
-  version = "1.0.5"
+  version = "1.0.8"
 
 [prune]
   go-tests = true
