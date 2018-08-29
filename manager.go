@@ -229,23 +229,19 @@ func (m *Manager) GoodAddresses(qtype uint16, services wire.ServiceFlag) []net.I
 func (m *Manager) Attempt(ip net.IP) {
 	m.mtx.Lock()
 	node, exists := m.nodes[ip.String()]
-	if !exists {
-		m.mtx.Unlock()
-		return
+	if exists {
+		node.LastAttempt = time.Now()
 	}
-	node.LastAttempt = time.Now()
 	m.mtx.Unlock()
 }
 
 func (m *Manager) Good(ip net.IP, services wire.ServiceFlag) {
 	m.mtx.Lock()
 	node, exists := m.nodes[ip.String()]
-	if !exists {
-		m.mtx.Unlock()
-		return
+	if exists {
+		node.Services = services
+		node.LastSuccess = time.Now()
 	}
-	node.Services = services
-	node.LastSuccess = time.Now()
 	m.mtx.Unlock()
 }
 
@@ -313,8 +309,9 @@ func (m *Manager) deserializePeers() error {
 		return fmt.Errorf("error reading %s: %v", filePath, err)
 	}
 
-	m.mtx.Lock()
 	l := len(nodes)
+
+	m.mtx.Lock()
 	m.nodes = nodes
 	m.mtx.Unlock()
 

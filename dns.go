@@ -27,19 +27,19 @@ func (d *DNSServer) Start() {
 	rr := fmt.Sprintf("%s 86400 IN NS %s", d.hostname, d.nameserver)
 	authority, err := dns.NewRR(rr)
 	if err != nil {
-		fmt.Printf("NewRR: %v\n", err)
+		log.Printf("NewRR: %v", err)
 		return
 	}
 
 	udpAddr, err := net.ResolveUDPAddr("udp4", d.listen)
 	if err != nil {
-		fmt.Printf("ResolveUDPAddr: %v\n", err)
+		log.Printf("ResolveUDPAddr: %v", err)
 		return
 	}
 
 	udpListen, err := net.ListenUDP("udp", udpAddr)
 	if err != nil {
-		fmt.Printf("ListenUDP: %v\n", err)
+		log.Printf("ListenUDP: %v", err)
 		return
 	}
 	defer udpListen.Close()
@@ -48,7 +48,7 @@ func (d *DNSServer) Start() {
 		b := make([]byte, 512)
 		_, addr, err := udpListen.ReadFromUDP(b)
 		if err != nil {
-			fmt.Printf("Read: %v\n", err)
+			log.Printf("Read: %v", err)
 			continue
 		}
 
@@ -56,19 +56,20 @@ func (d *DNSServer) Start() {
 			dnsMsg := new(dns.Msg)
 			err = dnsMsg.Unpack(b[:])
 			if err != nil {
-				log.Printf("%s: invalid dns message: %v\n",
+				log.Printf("%s: invalid dns message: %v",
 					addr, err)
 				return
 			}
 			if len(dnsMsg.Question) != 1 {
-				log.Printf("%s sent more than 1 question: %d\n",
+				log.Printf("%s sent more than 1 question: %d",
 					addr, len(dnsMsg.Question))
 				return
 			}
 			domainName := strings.ToLower(dnsMsg.Question[0].Name)
 			ff := strings.LastIndex(domainName, d.hostname)
 			if ff < 0 {
-				log.Printf("invalid name: %s\n", dnsMsg.Question[0].Name)
+				log.Printf("invalid name: %s",
+					dnsMsg.Question[0].Name)
 				return
 			}
 
@@ -78,7 +79,7 @@ func (d *DNSServer) Start() {
 				wantedSFStr := labels[0][1:]
 				u, err := strconv.ParseUint(wantedSFStr, 10, 64)
 				if err != nil {
-					log.Printf("%s: ParseUint: %v\n", addr, err)
+					log.Printf("%s: ParseUint: %v", addr, err)
 					return
 				}
 				wantedSF = wire.ServiceFlag(u)
@@ -94,7 +95,7 @@ func (d *DNSServer) Start() {
 			case dns.TypeNS:
 				atype = "NS"
 			default:
-				log.Printf("%s: invalid qtype: %d\n", addr,
+				log.Printf("%s: invalid qtype: %d", addr,
 					dnsMsg.Question[0].Qtype)
 				return
 			}
@@ -110,14 +111,18 @@ func (d *DNSServer) Start() {
 				respMsg.Ns = append(respMsg.Ns, authority)
 				ips := amgr.GoodAddresses(qtype, wantedSF)
 				for _, ip := range ips {
-					rr = fmt.Sprintf("%s 30 IN %s %s", dnsMsg.Question[0].Name, atype, ip.String())
+					rr = fmt.Sprintf("%s 30 IN %s %s",
+						dnsMsg.Question[0].Name, atype,
+						ip.String())
 					newRR, err := dns.NewRR(rr)
 					if err != nil {
-						log.Printf("%s: NewRR: %v\n", addr, err)
+						log.Printf("%s: NewRR: %v",
+							addr, err)
 						return
 					}
 
-					respMsg.Answer = append(respMsg.Answer, newRR)
+					respMsg.Answer = append(respMsg.Answer,
+						newRR)
 				}
 			} else {
 				rr = fmt.Sprintf("%s 86400 IN NS %s",
