@@ -17,6 +17,7 @@ import (
 
 type DNSServer struct {
 	hostname   string
+	listen     string
 	nameserver string
 }
 
@@ -30,7 +31,7 @@ func (d *DNSServer) Start() {
 		return
 	}
 
-	udpAddr, err := net.ResolveUDPAddr("udp4", "127.0.0.1:5354")
+	udpAddr, err := net.ResolveUDPAddr("udp4", d.listen)
 	if err != nil {
 		fmt.Printf("ResolveUDPAddr: %v\n", err)
 		return
@@ -148,7 +149,7 @@ func (d *DNSServer) Start() {
 	}
 }
 
-func NewDNSServer(hostname, nameserver string) *DNSServer {
+func NewDNSServer(hostname, nameserver, listen string) *DNSServer {
 	if hostname[len(hostname)-1] != '.' {
 		hostname = hostname + "."
 	}
@@ -158,6 +159,7 @@ func NewDNSServer(hostname, nameserver string) *DNSServer {
 
 	return &DNSServer{
 		hostname:   hostname,
+		listen:     listen,
 		nameserver: nameserver,
 	}
 }

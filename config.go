@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,6 +18,7 @@ import (
 
 const (
 	defaultConfigFilename = "dcrseeder.conf"
+	defaultListenPort     = "5354"
 )
 
 var (
@@ -32,7 +34,8 @@ var (
 //
 // See loadConfig for details on the configuration load process.
 type config struct {
-	Host       string `short:"H" long:"host" description:"hostname"`
+	Host       string `short:"H" long:"host" description:"Seed DNS address"`
+	Listen     string `long:"listen" short:"l" description:"Listen on address:port"`
 	Nameserver string `short:"n" long:"nameserver" description:"hostname of nameserver"`
 	Seeder     string `short:"s" long:"default seeder" description:"IP address of a  working node"`
 	TestNet    bool   `long:"testnet" description:"Use testnet"`
@@ -58,7 +61,9 @@ func loadConfig() (*config, error) {
 	}
 
 	// Default config.
-	cfg := config{}
+	cfg := config{
+		Listen: normalizeAddress("localhost", defaultListenPort),
+	}
 
 	preCfg := cfg
 	preParser := flags.NewParser(&preCfg, flags.Default)
@@ -118,9 +123,21 @@ func loadConfig() (*config, error) {
 		return nil, err
 	}
 
+	cfg.Listen = normalizeAddress(cfg.Listen, defaultListenPort)
+
 	if cfg.TestNet {
 		activeNetParams = &chaincfg.TestNet3Params
 	}
 
 	return &cfg, nil
+}
+
+// normalizeAddress returns addr with the passed default port appended if
+// there is not already a port specified.
+func normalizeAddress(addr, defaultPort string) string {
+	_, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return net.JoinHostPort(addr, defaultPort)
+	}
+	return addr
 }

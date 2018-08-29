@@ -144,7 +144,7 @@ func main() {
 	wg.Add(1)
 	go creep()
 
-	dnsServer := NewDNSServer(cfg.Host, cfg.Nameserver)
+	dnsServer := NewDNSServer(cfg.Host, cfg.Nameserver, cfg.Listen)
 	go dnsServer.Start()
 
 	wg.Wait()
