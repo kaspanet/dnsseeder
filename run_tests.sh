@@ -29,7 +29,7 @@ set -ex
 
 # Default GOVERSION
 [[ ! "$GOVERSION" ]] && GOVERSION=1.11
-REPO=dcrseeder
+REPO=dnsseeder
 
 testrepo () {
   GO=go
@@ -86,19 +86,19 @@ if [ ! "$DOCKER" ]; then
 fi
 
 # use Travis cache with docker
-DOCKER_IMAGE_TAG=decred-golang-builder-$GOVERSION
+DOCKER_IMAGE_TAG=daglabs-golang-builder-$GOVERSION
 mkdir -p ~/.cache
 if [ -f ~/.cache/$DOCKER_IMAGE_TAG.tar ]; then
   # load via cache
   $DOCKER load -i ~/.cache/$DOCKER_IMAGE_TAG.tar
 else
   # pull and save image to cache
-  $DOCKER pull decred/$DOCKER_IMAGE_TAG
-  $DOCKER save decred/$DOCKER_IMAGE_TAG > ~/.cache/$DOCKER_IMAGE_TAG.tar
+  $DOCKER pull daglabs/$DOCKER_IMAGE_TAG
+  $DOCKER save daglabs/$DOCKER_IMAGE_TAG > ~/.cache/$DOCKER_IMAGE_TAG.tar
 fi
 
-$DOCKER run --rm -it -v $(pwd):/src:Z decred/$DOCKER_IMAGE_TAG /bin/bash -c "\
+$DOCKER run --rm -it -v $(pwd):/src:Z daglabs/$DOCKER_IMAGE_TAG /bin/bash -c "\
   rsync -ra --filter=':- .gitignore'  \
-  /src/ /go/src/github.com/decred/$REPO/ && \
-  cd github.com/decred/$REPO/ && \
+  /src/ /go/src/github.com/daglabs/$REPO/ && \
+  cd github.com/daglabs/$REPO/ && \
   env GOVERSION=$GOVERSION GO111MODULE=on bash run_tests.sh"

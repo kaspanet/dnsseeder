@@ -11,16 +11,18 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/decred/dcrd/wire"
+	"github.com/daglabs/btcd/wire"
 	"github.com/miekg/dns"
 )
 
+// DNSServer struct
 type DNSServer struct {
 	hostname   string
 	listen     string
 	nameserver string
 }
 
+// Start - starts server
 func (d *DNSServer) Start() {
 	defer wg.Done()
 
@@ -154,6 +156,7 @@ func (d *DNSServer) Start() {
 	}
 }
 
+// NewDNSServer - create DNS server
 func NewDNSServer(hostname, nameserver, listen string) *DNSServer {
 	if hostname[len(hostname)-1] != '.' {
 		hostname = hostname + "."

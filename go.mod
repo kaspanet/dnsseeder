@@ -1,11 +1,11 @@
-module github.com/decred/dcrseeder
+module github.com/daglabs/dnsseeder
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/decred/dcrd/chaincfg v1.1.1
-	github.com/decred/dcrd/dcrutil v1.1.1
-	github.com/decred/dcrd/peer v1.0.1
-	github.com/decred/dcrd/wire v1.1.0
+	github.com/daglabs/btcd/dagconfig v1.1.1
+	github.com/daglabs/btcd/util v1.1.1
+	github.com/daglabs/btcd/peer v1.0.1
+	github.com/daglabs/btcd/wire v1.1.0
 	github.com/fsnotify/fsnotify v1.4.7 // indirect
 	github.com/golang/protobuf v1.2.0 // indirect
 	github.com/hpcloud/tail v1.0.0 // indirect

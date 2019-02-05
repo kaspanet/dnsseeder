@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/decred/dcrd/peer"
-	"github.com/decred/dcrd/wire"
+	"github.com/daglabs/btcd/peer"
+	"github.com/daglabs/btcd/wire"
 )
 
 const (
@@ -39,7 +39,7 @@ func creep() {
 	config := peer.Config{
 		UserAgentName:    "dcrpeersniffer",
 		UserAgentVersion: "0.0.1",
-		ChainParams:      activeNetParams,
+		DAGParams:        activeNetParams,
 		DisableRelayTx:   true,
 
 		Listeners: peer.MessageListeners{

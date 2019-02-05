@@ -11,23 +11,23 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/decred/dcrd/chaincfg"
-	"github.com/decred/dcrd/dcrutil"
+	"github.com/daglabs/btcd/dagconfig"
+	"github.com/daglabs/btcd/util"
 	flags "github.com/jessevdk/go-flags"
 )
 
 const (
-	defaultConfigFilename = "dcrseeder.conf"
+	defaultConfigFilename = "dnsseeder.conf"
 	defaultListenPort     = "5354"
 )
 
 var (
 	// Default network parameters
-	activeNetParams = &chaincfg.MainNetParams
+	activeNetParams = &dagconfig.MainNetParams
 
 	// Default configuration options
 	defaultConfigFile = filepath.Join(defaultHomeDir, defaultConfigFilename)
-	defaultHomeDir    = dcrutil.AppDataDir("dcrseeder", false)
+	defaultHomeDir    = util.AppDataDir("dnsseeder", false)
 )
 
 // config defines the configuration options for hardforkdemo.
@@ -126,7 +126,7 @@ func loadConfig() (*config, error) {
 	cfg.Listen = normalizeAddress(cfg.Listen, defaultListenPort)
 
 	if cfg.TestNet {
-		activeNetParams = &chaincfg.TestNet3Params
+		activeNetParams = &dagconfig.TestNet3Params
 	}
 
 	return &cfg, nil
