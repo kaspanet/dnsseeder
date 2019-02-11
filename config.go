@@ -116,13 +116,6 @@ func loadConfig() (*config, error) {
 		return nil, err
 	}
 
-	if len(cfg.Seeder) == 0 {
-		str := "Please specify a seeder"
-		err := fmt.Errorf(str)
-		fmt.Fprintln(os.Stderr, err)
-		return nil, err
-	}
-
 	cfg.Listen = normalizeAddress(cfg.Listen, defaultListenPort)
 
 	if cfg.TestNet {
