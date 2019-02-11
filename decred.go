@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/decred/dcrd/connmgr"
 	"github.com/decred/dcrd/peer"
 	"github.com/decred/dcrd/wire"
 )
@@ -24,12 +25,27 @@ const (
 	// defaultNodeTimeout defines the timeout time waiting for
 	// a response from a node.
 	defaultNodeTimeout = time.Second * 3
+
+	// defaultRequiredServices describes the default services that are
+	// required to be supported by outbound peers.
+	defaultRequiredServices = wire.SFNodeNetwork
 )
 
 var (
 	amgr *Manager
 	wg   sync.WaitGroup
 )
+
+// dcrdLookup returns the correct DNS lookup function to use depending on the
+// passed host and configuration options.  For example, .onion addresses will be
+// resolved using the onion specific proxy if one was specified, but will
+// otherwise treat the normal proxy as tor unless --noonion was specified in
+// which case the lookup will fail.  Meanwhile, normal IP addresses will be
+// resolved using tor if a proxy was specified unless --noonion was also
+// specified in which case the normal system DNS resolver will be used.
+func dcrdLookup(host string) ([]net.IP, error) {
+	return net.LookupIP(host)
+}
 
 func creep() {
 	defer wg.Done()
@@ -65,6 +81,17 @@ func creep() {
 	var wg sync.WaitGroup
 	for {
 		ips := amgr.Addresses()
+		if len(ips) == 0 {
+			// Add peers discovered through DNS to the address manager.
+			connmgr.SeedFromDNS(activeNetParams, defaultRequiredServices, dcrdLookup, func(addrs []*wire.NetAddress) {
+				n := make([]net.IP, 0, len(addrs))
+				for _, addr := range addrs {
+					n = append(n, addr.IP)
+				}
+				amgr.AddAddresses(n)
+			})
+			ips = amgr.Addresses()
+		}
 		if len(ips) == 0 {
 			log.Printf("No stale addresses -- sleeping for %v",
 				defaultAddressTimeout)
@@ -124,6 +151,8 @@ func creep() {
 			}(ip)
 		}
 		wg.Wait()
+		log.Printf("Sleeping for %v", defaultAddressTimeout)
+		time.Sleep(defaultAddressTimeout)
 	}
 }
 
@@ -139,7 +168,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	amgr.AddAddresses([]net.IP{net.ParseIP(cfg.Seeder)})
+	if len(cfg.Seeder) != 0 {
+		ip := net.ParseIP(cfg.Seeder)
+		if ip == nil {
+			log.Printf("Failed to parse seed IP: %v, ignoring", cfg.Seeder)
+		} else {
+			amgr.AddAddresses([]net.IP{ip})
+		}
+	}
 
 	wg.Add(1)
 	go creep()
