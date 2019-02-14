@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	defaultConfigFilename = "dnsseeder.conf"
+	defaultConfigFilename = "daglabs-seeder.conf"
 	defaultListenPort     = "5354"
 )
 
@@ -27,7 +27,7 @@ var (
 
 	// Default configuration options
 	defaultConfigFile = filepath.Join(defaultHomeDir, defaultConfigFilename)
-	defaultHomeDir    = util.AppDataDir("dnsseeder", false)
+	defaultHomeDir    = util.AppDataDir("daglabs-seeder", false)
 )
 
 // config defines the configuration options for hardforkdemo.

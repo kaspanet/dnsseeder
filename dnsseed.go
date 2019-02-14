@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -32,18 +33,19 @@ const (
 )
 
 var (
-	amgr *Manager
-	wg   sync.WaitGroup
+	amgr             *Manager
+	wg               sync.WaitGroup
+	peersDefaultPort int
 )
 
-// dcrdLookup returns the correct DNS lookup function to use depending on the
+// hostLookup returns the correct DNS lookup function to use depending on the
 // passed host and configuration options.  For example, .onion addresses will be
 // resolved using the onion specific proxy if one was specified, but will
 // otherwise treat the normal proxy as tor unless --noonion was specified in
 // which case the lookup will fail.  Meanwhile, normal IP addresses will be
 // resolved using tor if a proxy was specified unless --noonion was also
 // specified in which case the normal system DNS resolver will be used.
-func dcrdLookup(host string) ([]net.IP, error) {
+func hostLookup(host string) ([]net.IP, error) {
 	return net.LookupIP(host)
 }
 
@@ -51,69 +53,62 @@ func creep() {
 	defer wg.Done()
 
 	onaddr := make(chan struct{})
-	verack := make(chan struct{})
+	onversion := make(chan struct{})
 	config := peer.Config{
-		UserAgentName:    "dcrpeersniffer",
+		UserAgentName:    "daglabs-sniffer",
 		UserAgentVersion: "0.0.1",
 		DAGParams:        activeNetParams,
 		DisableRelayTx:   true,
 
 		Listeners: peer.MessageListeners{
 			OnAddr: func(p *peer.Peer, msg *wire.MsgAddr) {
-				n := make([]net.IP, 0, len(msg.AddrList))
-				for _, addr := range msg.AddrList {
-					n = append(n, addr.IP)
-				}
-				added := amgr.AddAddresses(n)
+				added := amgr.AddAddresses(msg.AddrList)
 				log.Printf("Peer %v sent %v addresses, %d new",
 					p.Addr(), len(msg.AddrList), added)
 				onaddr <- struct{}{}
 			},
-			OnVerAck: func(p *peer.Peer, msg *wire.MsgVerAck) {
+			OnVersion: func(p *peer.Peer, msg *wire.MsgVersion) {
 				log.Printf("Adding peer %v with services %v",
 					p.NA().IP.String(), p.Services())
-
-				verack <- struct{}{}
+				// notify that version is received and Peer's subnetwork ID is updated
+				onversion <- struct{}{}
 			},
 		},
+		SubnetworkID:  &wire.SubnetworkIDSupportsAll,
+		DnsSeederPeer: true,
 	}
 
 	var wg sync.WaitGroup
 	for {
-		ips := amgr.Addresses()
-		if len(ips) == 0 {
+		peers := amgr.Addresses()
+		if len(peers) == 0 && amgr.AddressCount() == 0 {
 			// Add peers discovered through DNS to the address manager.
-			connmgr.SeedFromDNS(activeNetParams, defaultRequiredServices, dcrdLookup, func(addrs []*wire.NetAddress) {
-				n := make([]net.IP, 0, len(addrs))
-				for _, addr := range addrs {
-					n = append(n, addr.IP)
-				}
-				amgr.AddAddresses(n)
+			connmgr.SeedFromDNS(activeNetParams, defaultRequiredServices, &wire.SubnetworkIDSupportsAll, hostLookup, func(addrs []*wire.NetAddress) {
+				amgr.AddAddresses(addrs)
 			})
-			ips = amgr.Addresses()
+			peers = amgr.Addresses()
 		}
-		if len(ips) == 0 {
+		if len(peers) == 0 {
 			log.Printf("No stale addresses -- sleeping for %v",
 				defaultAddressTimeout)
 			time.Sleep(defaultAddressTimeout)
 			continue
 		}
 
-		wg.Add(len(ips))
+		wg.Add(len(peers))
 
-		for _, ip := range ips {
-			go func(ip net.IP) {
+		for _, addr := range peers {
+			go func(addr *wire.NetAddress) {
 				defer wg.Done()
 
-				host := net.JoinHostPort(ip.String(),
-					activeNetParams.DefaultPort)
+				host := net.JoinHostPort(addr.IP.String(), fmt.Sprintf("%d", int(addr.Port)))
 				p, err := peer.NewOutboundPeer(&config, host)
 				if err != nil {
 					log.Printf("NewOutboundPeer on %v: %v",
 						host, err)
 					return
 				}
-				amgr.Attempt(ip)
+				amgr.Attempt(addr.IP)
 				conn, err := net.DialTimeout("tcp", p.Addr(),
 					defaultNodeTimeout)
 				if err != nil {
@@ -122,18 +117,15 @@ func creep() {
 				}
 				p.AssociateConnection(conn)
 
-				// Wait for the verack message or timeout in case of
-				// failure.
+				// Wait version messsage or timeout in case of failure.
 				select {
-				case <-verack:
+				case <-onversion:
 					// Mark this peer as a good node.
-					amgr.Good(p.NA().IP, p.Services())
-
+					amgr.Good(p.NA().IP, p.Services(), p.SubnetworkID())
 					// Ask peer for some addresses.
 					p.QueueMessage(wire.NewMsgGetAddr(), nil)
-
 				case <-time.After(defaultNodeTimeout):
-					log.Printf("verack timeout on peer %v",
+					log.Printf("version timeout on peer %v",
 						p.Addr())
 					p.Disconnect()
 					return
@@ -148,7 +140,7 @@ func creep() {
 					return
 				}
 				p.Disconnect()
-			}(ip)
+			}(addr)
 		}
 		wg.Wait()
 		log.Printf("Sleeping for %v", defaultAddressTimeout)
@@ -168,12 +160,23 @@ func main() {
 		os.Exit(1)
 	}
 
+	peersDefaultPort, _ := strconv.Atoi(activeNetParams.DefaultPort)
+
 	if len(cfg.Seeder) != 0 {
 		ip := net.ParseIP(cfg.Seeder)
 		if ip == nil {
-			log.Printf("Failed to parse seed IP: %v, ignoring", cfg.Seeder)
-		} else {
-			amgr.AddAddresses([]net.IP{ip})
+			hostAdrs, err := net.LookupHost(cfg.Seeder)
+			if err != nil {
+				log.Printf("Failed to resolve seed host: %v, %v, ignoring", cfg.Seeder, err)
+			} else {
+				ip = net.ParseIP(hostAdrs[0])
+				if ip == nil {
+					log.Printf("Failed to resolve seed host: %v, ignoring", cfg.Seeder)
+				}
+			}
+		}
+		if ip != nil {
+			amgr.AddAddresses([]*wire.NetAddress{wire.NewNetAddressIPPort(ip, uint16(peersDefaultPort), defaultRequiredServices)})
 		}
 	}
 
