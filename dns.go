@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/daglabs/btcd/util/subnetworkid"
 	"github.com/daglabs/btcd/wire"
 	"github.com/miekg/dns"
 )
@@ -75,16 +76,30 @@ func (d *DNSServer) Start() {
 				return
 			}
 
+			// Domain name may be in following format:
+			//   [nsubnetwork.][xservice.]hostname
 			wantedSF := wire.SFNodeNetwork
-			labels := dns.SplitDomainName(domainName)
-			if labels[0][0] == 'x' && len(labels[0]) > 1 {
-				wantedSFStr := labels[0][1:]
-				u, err := strconv.ParseUint(wantedSFStr, 10, 64)
-				if err != nil {
-					log.Printf("%s: ParseUint: %v", addr, err)
-					return
+			subnetworkID := &wire.SubnetworkIDSupportsAll
+			if d.hostname != domainName {
+				idx := 0
+				labels := dns.SplitDomainName(domainName)
+				if labels[0][0] == 'n' && len(labels[0]) > 1 {
+					idx = 1
+					subnetworkID, err = subnetworkid.NewFromStr(labels[0][1:])
+					if err != nil {
+						log.Printf("%s: subnetworkid.NewFromStr: %v", addr, err)
+						return
+					}
 				}
-				wantedSF = wire.ServiceFlag(u)
+				if labels[idx][0] == 'x' && len(labels[idx]) > 1 {
+					wantedSFStr := labels[idx][1:]
+					u, err := strconv.ParseUint(wantedSFStr, 10, 64)
+					if err != nil {
+						log.Printf("%s: ParseUint: %v", addr, err)
+						return
+					}
+					wantedSF = wire.ServiceFlag(u)
+				}
 			}
 
 			var atype string
@@ -111,11 +126,11 @@ func (d *DNSServer) Start() {
 
 			if qtype != dns.TypeNS {
 				respMsg.Ns = append(respMsg.Ns, authority)
-				ips := amgr.GoodAddresses(qtype, wantedSF)
-				for _, ip := range ips {
+				addrs := amgr.GoodAddresses(qtype, wantedSF, subnetworkID)
+				for _, a := range addrs {
 					rr = fmt.Sprintf("%s 30 IN %s %s",
 						dnsMsg.Question[0].Name, atype,
-						ip.String())
+						a.IP.String())
 					newRR, err := dns.NewRR(rr)
 					if err != nil {
 						log.Printf("%s: NewRR: %v",

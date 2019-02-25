@@ -214,7 +214,7 @@ func (m *Manager) GoodAddresses(qtype uint16, services wire.ServiceFlag, subnetw
 			continue
 		}
 
-		if !node.SubnetworkID.IsEqual(subnetworkID) {
+		if node.SubnetworkID == nil || !node.SubnetworkID.IsEqual(subnetworkID) {
 			continue
 		}
 

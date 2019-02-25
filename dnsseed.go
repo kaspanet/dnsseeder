@@ -75,7 +75,7 @@ func creep() {
 			},
 		},
 		SubnetworkID:  &wire.SubnetworkIDSupportsAll,
-		DnsSeederPeer: true,
+		DNSSeederPeer: true,
 	}
 
 	var wg sync.WaitGroup
@@ -123,7 +123,7 @@ func creep() {
 					// Mark this peer as a good node.
 					amgr.Good(p.NA().IP, p.Services(), p.SubnetworkID())
 					// Ask peer for some addresses.
-					p.QueueMessage(wire.NewMsgGetAddr(), nil)
+					p.QueueMessage(wire.NewMsgGetAddr(nil), nil)
 				case <-time.After(defaultNodeTimeout):
 					log.Printf("version timeout on peer %v",
 						p.Addr())
@@ -160,7 +160,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	peersDefaultPort, _ := strconv.Atoi(activeNetParams.DefaultPort)
+	peersDefaultPort, _ = strconv.Atoi(activeNetParams.DefaultPort)
 
 	if len(cfg.Seeder) != 0 {
 		ip := net.ParseIP(cfg.Seeder)
