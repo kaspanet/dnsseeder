@@ -26,12 +26,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/daglabs/btcd"
-  packages = ["blockdag","btcec","connmgr","dagconfig","dagconfig/daghash","database","database/ffldb","database/internal/treap","logger","peer","txscript","util","util/base58","util/bech32","util/hdkeychain","util/subnetworkid","util/txsort","wire"]
-  revision = "58b1b01c3fb320893a2edc7b01dad3a36acec1b1"
-
-[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"

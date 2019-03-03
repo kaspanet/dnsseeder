@@ -11,31 +11,30 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/daglabs/btcd/connmgr"
 	"github.com/daglabs/btcd/peer"
+	"github.com/daglabs/btcd/signal"
 	"github.com/daglabs/btcd/wire"
 )
 
 const (
-	// defaultAddressTimeout defines the duration to wait
-	// for new addresses.
-	defaultAddressTimeout = time.Minute * 10
-
-	// defaultNodeTimeout defines the timeout time waiting for
+	// nodeTimeout defines the timeout time waiting for
 	// a response from a node.
-	defaultNodeTimeout = time.Second * 3
+	nodeTimeout = time.Second * 3
 
-	// defaultRequiredServices describes the default services that are
+	// requiredServices describes the default services that are
 	// required to be supported by outbound peers.
-	defaultRequiredServices = wire.SFNodeNetwork
+	requiredServices = wire.SFNodeNetwork
 )
 
 var (
 	amgr             *Manager
 	wg               sync.WaitGroup
 	peersDefaultPort int
+	systemShutdown   int32
 )
 
 // hostLookup returns the correct DNS lookup function to use depending on the
@@ -52,8 +51,8 @@ func hostLookup(host string) ([]net.IP, error) {
 func creep() {
 	defer wg.Done()
 
-	onaddr := make(chan struct{})
-	onversion := make(chan struct{})
+	onAddr := make(chan struct{})
+	onVersion := make(chan struct{})
 	config := peer.Config{
 		UserAgentName:    "daglabs-sniffer",
 		UserAgentVersion: "0.0.1",
@@ -65,43 +64,53 @@ func creep() {
 				added := amgr.AddAddresses(msg.AddrList)
 				log.Printf("Peer %v sent %v addresses, %d new",
 					p.Addr(), len(msg.AddrList), added)
-				onaddr <- struct{}{}
+				onAddr <- struct{}{}
 			},
 			OnVersion: func(p *peer.Peer, msg *wire.MsgVersion) {
 				log.Printf("Adding peer %v with services %v",
 					p.NA().IP.String(), p.Services())
 				// notify that version is received and Peer's subnetwork ID is updated
-				onversion <- struct{}{}
+				onVersion <- struct{}{}
 			},
 		},
 		SubnetworkID:    &wire.SubnetworkIDSupportsAll,
 		IsDNSSeederPeer: true,
 	}
 
-	var wg sync.WaitGroup
+	var wgCreep sync.WaitGroup
 	for {
 		peers := amgr.Addresses()
 		if len(peers) == 0 && amgr.AddressCount() == 0 {
 			// Add peers discovered through DNS to the address manager.
-			connmgr.SeedFromDNS(activeNetParams, defaultRequiredServices, &wire.SubnetworkIDSupportsAll, hostLookup, func(addrs []*wire.NetAddress) {
+			connmgr.SeedFromDNS(activeNetParams, requiredServices, &wire.SubnetworkIDSupportsAll, hostLookup, func(addrs []*wire.NetAddress) {
 				amgr.AddAddresses(addrs)
 			})
 			peers = amgr.Addresses()
 		}
 		if len(peers) == 0 {
-			log.Printf("No stale addresses -- sleeping for %v",
-				defaultAddressTimeout)
-			time.Sleep(defaultAddressTimeout)
+			log.Printf("No stale addresses -- sleeping for 10 minutes")
+			for i := 0; i < 600; i++ {
+				time.Sleep(time.Second)
+				if atomic.LoadInt32(&systemShutdown) != 0 {
+					log.Printf("Creep thread shutdown")
+					return
+				}
+			}
 			continue
 		}
 
-		wg.Add(len(peers))
-
 		for _, addr := range peers {
+			if atomic.LoadInt32(&systemShutdown) != 0 {
+				log.Printf("Waiting creep threads to terminate")
+				wgCreep.Wait()
+				log.Printf("Creep thread shutdown")
+				return
+			}
+			wgCreep.Add(1)
 			go func(addr *wire.NetAddress) {
-				defer wg.Done()
+				defer wgCreep.Done()
 
-				host := net.JoinHostPort(addr.IP.String(), fmt.Sprintf("%d", int(addr.Port)))
+				host := net.JoinHostPort(addr.IP.String(), strconv.Itoa(int(addr.Port)))
 				p, err := peer.NewOutboundPeer(&config, host)
 				if err != nil {
 					log.Printf("NewOutboundPeer on %v: %v",
@@ -109,8 +118,7 @@ func creep() {
 					return
 				}
 				amgr.Attempt(addr.IP)
-				conn, err := net.DialTimeout("tcp", p.Addr(),
-					defaultNodeTimeout)
+				conn, err := net.DialTimeout("tcp", p.Addr(), nodeTimeout)
 				if err != nil {
 					log.Printf("%v", err)
 					return
@@ -119,12 +127,12 @@ func creep() {
 
 				// Wait version messsage or timeout in case of failure.
 				select {
-				case <-onversion:
+				case <-onVersion:
 					// Mark this peer as a good node.
 					amgr.Good(p.NA().IP, p.Services(), p.SubnetworkID())
 					// Ask peer for some addresses.
 					p.QueueMessage(wire.NewMsgGetAddr(nil), nil)
-				case <-time.After(defaultNodeTimeout):
+				case <-time.After(nodeTimeout):
 					log.Printf("version timeout on peer %v",
 						p.Addr())
 					p.Disconnect()
@@ -132,8 +140,8 @@ func creep() {
 				}
 
 				select {
-				case <-onaddr:
-				case <-time.After(defaultNodeTimeout):
+				case <-onAddr:
+				case <-time.After(nodeTimeout):
 					log.Printf("getaddr timeout on peer %v",
 						p.Addr())
 					p.Disconnect()
@@ -142,9 +150,7 @@ func creep() {
 				p.Disconnect()
 			}(addr)
 		}
-		wg.Wait()
-		log.Printf("Sleeping for %v", defaultAddressTimeout)
-		time.Sleep(defaultAddressTimeout)
+		wgCreep.Wait()
 	}
 }
 
@@ -176,7 +182,9 @@ func main() {
 			}
 		}
 		if ip != nil {
-			amgr.AddAddresses([]*wire.NetAddress{wire.NewNetAddressIPPort(ip, uint16(peersDefaultPort), defaultRequiredServices)})
+			amgr.AddAddresses([]*wire.NetAddress{
+				wire.NewNetAddressIPPort(ip, uint16(peersDefaultPort),
+					requiredServices)})
 		}
 	}
 
@@ -184,7 +192,21 @@ func main() {
 	go creep()
 
 	dnsServer := NewDNSServer(cfg.Host, cfg.Nameserver, cfg.Listen)
+	wg.Add(1)
 	go dnsServer.Start()
 
-	wg.Wait()
+	defer func() {
+		log.Printf("Gracefully shutting down the seeder...")
+		atomic.StoreInt32(&systemShutdown, 1)
+		close(amgr.quit)
+		wg.Wait()
+		amgr.wg.Wait()
+		log.Printf("Seeder shutdown complete")
+	}()
+
+	// Wait until the interrupt signal is received from an OS signal or
+	// shutdown is requested through one of the subsystems such as the RPC
+	// server.
+	interrupt := signal.InterruptListener()
+	<-interrupt
 }

@@ -133,6 +133,7 @@ func NewManager(dataDir string) (*Manager, error) {
 		}
 	}
 
+	amgr.wg.Add(1)
 	go amgr.addressHandler()
 
 	return &amgr, nil
@@ -264,6 +265,7 @@ func (m *Manager) Good(ip net.IP, services wire.ServiceFlag, subnetworkid *subne
 // addressHandler is the main handler for the address manager.  It must be run
 // as a goroutine.
 func (m *Manager) addressHandler() {
+	defer m.wg.Done()
 	pruneAddressTicker := time.NewTicker(pruneAddressInterval)
 	defer pruneAddressTicker.Stop()
 	dumpAddressTicker := time.NewTicker(dumpAddressInterval)
@@ -279,8 +281,9 @@ out:
 			break out
 		}
 	}
+	log.Printf("Address manager: saving peers")
 	m.savePeers()
-	m.wg.Done()
+	log.Printf("Address manager shoutdown")
 }
 
 func (m *Manager) prunePeers() {

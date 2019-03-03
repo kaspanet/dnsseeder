@@ -8,8 +8,11 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"strconv"
 	"strings"
+	"sync/atomic"
+	"time"
 
 	"github.com/daglabs/btcd/util/subnetworkid"
 	"github.com/daglabs/btcd/wire"
@@ -49,13 +52,29 @@ func (d *DNSServer) Start() {
 
 	for {
 		b := make([]byte, 512)
+	again:
+		err := udpListen.SetReadDeadline(time.Now().Add(time.Second))
+		if err != nil {
+			log.Printf("SetReadDeadline: %v", err)
+			os.Exit(1)
+		}
 		_, addr, err := udpListen.ReadFromUDP(b)
 		if err != nil {
-			log.Printf("Read: %v", err)
+			if err, ok := err.(net.Error); ok && err.Timeout() {
+				if atomic.LoadInt32(&systemShutdown) == 0 {
+					goto again
+				}
+				log.Printf("DNS server shutdown")
+				return
+			}
+			log.Printf("Read: %T", err.(*net.OpError).Err)
 			continue
 		}
 
+		wg.Add(1)
+
 		go func() {
+			defer wg.Done()
 			dnsMsg := new(dns.Msg)
 			err = dnsMsg.Unpack(b[:])
 			if err != nil {
