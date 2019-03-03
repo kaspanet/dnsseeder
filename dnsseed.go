@@ -74,8 +74,8 @@ func creep() {
 				onversion <- struct{}{}
 			},
 		},
-		SubnetworkID:  &wire.SubnetworkIDSupportsAll,
-		DNSSeederPeer: true,
+		SubnetworkID:    &wire.SubnetworkIDSupportsAll,
+		IsDNSSeederPeer: true,
 	}
 
 	var wg sync.WaitGroup
