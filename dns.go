@@ -62,6 +62,7 @@ func (d *DNSServer) Start() {
 		if err != nil {
 			if err, ok := err.(net.Error); ok && err.Timeout() {
 				if atomic.LoadInt32(&systemShutdown) == 0 {
+					// use goto in order to do not re-allocate 'b' buffer
 					goto again
 				}
 				log.Printf("DNS server shutdown")

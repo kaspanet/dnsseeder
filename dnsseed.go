@@ -67,14 +67,17 @@ func creep() {
 				onAddr <- struct{}{}
 			},
 			OnVersion: func(p *peer.Peer, msg *wire.MsgVersion) {
-				log.Printf("Adding peer %v with services %v",
-					p.NA().IP.String(), p.Services())
+				log.Printf("Adding peer %v with services %v and subnetword ID %v",
+					p.NA().IP.String(), msg.Services, msg.SubnetworkID)
+				// Mark this peer as a good node.
+				amgr.Good(p.NA().IP, msg.Services, &msg.SubnetworkID)
+				// Ask peer for some addresses.
+				p.QueueMessage(wire.NewMsgGetAddr(nil), nil)
 				// notify that version is received and Peer's subnetwork ID is updated
 				onVersion <- struct{}{}
 			},
 		},
-		SubnetworkID:    &wire.SubnetworkIDSupportsAll,
-		IsDNSSeederPeer: true,
+		SubnetworkID: &wire.SubnetworkIDSupportsAll,
 	}
 
 	var wgCreep sync.WaitGroup
@@ -128,10 +131,6 @@ func creep() {
 				// Wait version messsage or timeout in case of failure.
 				select {
 				case <-onVersion:
-					// Mark this peer as a good node.
-					amgr.Good(p.NA().IP, p.Services(), p.SubnetworkID())
-					// Ask peer for some addresses.
-					p.QueueMessage(wire.NewMsgGetAddr(nil), nil)
 				case <-time.After(nodeTimeout):
 					log.Printf("version timeout on peer %v",
 						p.Addr())
