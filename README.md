@@ -1,4 +1,4 @@
-dcrseeder
+dnsseeder
 =========
 
 ## Requirements
@@ -7,7 +7,7 @@ dcrseeder
 
 ## Getting Started
 
-- dcrseeder will now be installed in either ```$GOROOT/bin``` or
+- dnsseeder will now be installed in either ```$GOROOT/bin``` or
   ```$GOPATH/bin``` depending on your configuration.  If you did not already
   add the bin directory to your system path during Go installation, we
   recommend you do so now.
@@ -38,25 +38,25 @@ root directory.  Some notes:
 
 * Replace `go` with `vgo` when using Go 1.10.
 
-* The `dcrseeder` executable will be installed to `$GOPATH/bin`.  `GOPATH`
+* The `dnsseeder` executable will be installed to `$GOPATH/bin`.  `GOPATH`
   defaults to `$HOME/go` (or `%USERPROFILE%\go` on Windows) if unset.
 
-For more information about Decred and how to set up your software please go to
-our docs page at [docs.decred.org](https://docs.decred.org/getting-started/beginner-guide/).
+For more information about Daglabs and how to set up your software please go to
+our docs page at [docs.daglabs.org](https://docs.daglabs.org/getting-started/beginner-guide/).
 
-To start dcrseeder listening on udp 127.0.0.1:5354 with an initial connection to working testnet node 192.168.0.1:
+To start dnsseeder listening on udp 127.0.0.1:5354 with an initial connection to working testnet node 192.168.0.1:
 
 ```
-$ ./dcrseeder -n nameserver.example.com -H network-seed.example.com -s 192.168.0.1 --testnet
+$ ./dnsseeder -n nameserver.example.com -H network-seed.example.com -s 192.168.0.1 --testnet
 ```
 
 You will then need to redirect DNS traffic on your public IP port 53 to 127.0.0.1:5354
 
 ## Issue Tracker
 
-The [integrated github issue tracker](https://github.com/decred/dcrseeder/issues)
+The [integrated github issue tracker](https://github.com/daglabs/dnsseeder/issues)
 is used for this project.
 
 ## License
 
-dcrseeder is licensed under the [copyfree](http://copyfree.org) ISC License.
+dnsseeder is licensed under the [copyfree](http://copyfree.org) ISC License.

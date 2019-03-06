@@ -14,16 +14,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/decred/dcrd/wire"
+	"github.com/daglabs/btcd/util/subnetworkid"
+	"github.com/daglabs/btcd/wire"
 	"github.com/miekg/dns"
 )
 
 type Node struct {
-	IP          net.IP
-	Services    wire.ServiceFlag
-	LastAttempt time.Time
-	LastSuccess time.Time
-	LastSeen    time.Time
+	Addr         *wire.NetAddress
+	Services     wire.ServiceFlag
+	LastAttempt  time.Time
+	LastSuccess  time.Time
+	LastSeen     time.Time
+	SubnetworkID *subnetworkid.SubnetworkID
 }
 
 type Manager struct {
@@ -131,20 +133,21 @@ func NewManager(dataDir string) (*Manager, error) {
 		}
 	}
 
+	amgr.wg.Add(1)
 	go amgr.addressHandler()
 
 	return &amgr, nil
 }
 
-func (m *Manager) AddAddresses(addrs []net.IP) int {
+func (m *Manager) AddAddresses(addrs []*wire.NetAddress) int {
 	var count int
 
 	m.mtx.Lock()
 	for _, addr := range addrs {
-		if !isRoutable(addr) {
+		if !isRoutable(addr.IP) {
 			continue
 		}
-		addrStr := addr.String()
+		addrStr := addr.IP.String()
 
 		_, exists := m.nodes[addrStr]
 		if exists {
@@ -152,7 +155,7 @@ func (m *Manager) AddAddresses(addrs []net.IP) int {
 			continue
 		}
 		node := Node{
-			IP:       addr,
+			Addr:     addr,
 			LastSeen: time.Now(),
 		}
 		m.nodes[addrStr] = &node
@@ -164,8 +167,8 @@ func (m *Manager) AddAddresses(addrs []net.IP) int {
 }
 
 // Addresses returns IPs that need to be tested again.
-func (m *Manager) Addresses() []net.IP {
-	addrs := make([]net.IP, 0, defaultMaxAddresses*8)
+func (m *Manager) Addresses() []*wire.NetAddress {
+	addrs := make([]*wire.NetAddress, 0, defaultMaxAddresses*8)
 	now := time.Now()
 	i := defaultMaxAddresses
 
@@ -178,7 +181,7 @@ func (m *Manager) Addresses() []net.IP {
 			now.Sub(node.LastAttempt) < defaultStaleTimeout {
 			continue
 		}
-		addrs = append(addrs, node.IP)
+		addrs = append(addrs, node.Addr)
 		i--
 	}
 	m.mtx.RUnlock()
@@ -186,10 +189,15 @@ func (m *Manager) Addresses() []net.IP {
 	return addrs
 }
 
+// AddressCount returns number of known nodes.
+func (m *Manager) AddressCount() int {
+	return len(m.nodes)
+}
+
 // GoodAddresses returns good working IPs that match both the
 // passed DNS query type and have the requested services.
-func (m *Manager) GoodAddresses(qtype uint16, services wire.ServiceFlag) []net.IP {
-	addrs := make([]net.IP, 0, defaultMaxAddresses)
+func (m *Manager) GoodAddresses(qtype uint16, services wire.ServiceFlag, subnetworkID *subnetworkid.SubnetworkID) []*wire.NetAddress {
+	addrs := make([]*wire.NetAddress, 0, defaultMaxAddresses)
 	i := defaultMaxAddresses
 
 	if qtype != dns.TypeA && qtype != dns.TypeAAAA {
@@ -203,9 +211,17 @@ func (m *Manager) GoodAddresses(qtype uint16, services wire.ServiceFlag) []net.I
 			break
 		}
 
-		if qtype == dns.TypeA && node.IP.To4() == nil {
+		if node.Addr.Port != uint16(peersDefaultPort) {
 			continue
-		} else if qtype == dns.TypeAAAA && node.IP.To4() != nil {
+		}
+
+		if node.SubnetworkID == nil || !node.SubnetworkID.IsEqual(subnetworkID) {
+			continue
+		}
+
+		if qtype == dns.TypeA && node.Addr.IP.To4() == nil {
+			continue
+		} else if qtype == dns.TypeAAAA && node.Addr.IP.To4() != nil {
 			continue
 		}
 
@@ -218,7 +234,7 @@ func (m *Manager) GoodAddresses(qtype uint16, services wire.ServiceFlag) []net.I
 		if node.Services&services != services {
 			continue
 		}
-		addrs = append(addrs, node.IP)
+		addrs = append(addrs, node.Addr)
 		i--
 	}
 	m.mtx.RUnlock()
@@ -235,12 +251,13 @@ func (m *Manager) Attempt(ip net.IP) {
 	m.mtx.Unlock()
 }
 
-func (m *Manager) Good(ip net.IP, services wire.ServiceFlag) {
+func (m *Manager) Good(ip net.IP, services wire.ServiceFlag, subnetworkid *subnetworkid.SubnetworkID) {
 	m.mtx.Lock()
 	node, exists := m.nodes[ip.String()]
 	if exists {
 		node.Services = services
 		node.LastSuccess = time.Now()
+		node.SubnetworkID = subnetworkid
 	}
 	m.mtx.Unlock()
 }
@@ -248,6 +265,7 @@ func (m *Manager) Good(ip net.IP, services wire.ServiceFlag) {
 // addressHandler is the main handler for the address manager.  It must be run
 // as a goroutine.
 func (m *Manager) addressHandler() {
+	defer m.wg.Done()
 	pruneAddressTicker := time.NewTicker(pruneAddressInterval)
 	defer pruneAddressTicker.Stop()
 	dumpAddressTicker := time.NewTicker(dumpAddressInterval)
@@ -263,8 +281,9 @@ out:
 			break out
 		}
 	}
+	log.Printf("Address manager: saving peers")
 	m.savePeers()
-	m.wg.Done()
+	log.Printf("Address manager shoutdown")
 }
 
 func (m *Manager) prunePeers() {
