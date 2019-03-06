@@ -165,16 +165,20 @@ func main() {
 		os.Exit(1)
 	}
 
-	peersDefaultPort, _ = strconv.Atoi(activeNetParams.DefaultPort)
+	peersDefaultPort, err = strconv.Atoi(activeNetParams.DefaultPort)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Invalid peers default port %s: %v\n", activeNetParams.DefaultPort, err)
+		os.Exit(1)
+	}
 
 	if len(cfg.Seeder) != 0 {
 		ip := net.ParseIP(cfg.Seeder)
 		if ip == nil {
-			hostAdrs, err := net.LookupHost(cfg.Seeder)
+			hostAddrs, err := net.LookupHost(cfg.Seeder)
 			if err != nil {
 				log.Printf("Failed to resolve seed host: %v, %v, ignoring", cfg.Seeder, err)
 			} else {
-				ip = net.ParseIP(hostAdrs[0])
+				ip = net.ParseIP(hostAddrs[0])
 				if ip == nil {
 					log.Printf("Failed to resolve seed host: %v, ignoring", cfg.Seeder)
 				}
