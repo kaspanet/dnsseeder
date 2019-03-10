@@ -100,7 +100,7 @@ func (d *DNSServer) extractServicesSubnetworkID(addr *net.UDPAddr, domainName st
 	//   [nsubnetwork.][xservice.]hostname
 	// where connmgr.SubnetworkIDPrefixChar and connmgr.ServiceFlagPrefixChar are prefexes
 	wantedSF := wire.SFNodeNetwork
-	subnetworkID := &wire.SubnetworkIDSupportsAll
+	subnetworkID := subnetworkid.SubnetworkIDSupportsAll
 	if d.hostname != domainName {
 		idx := 0
 		labels := dns.SplitDomainName(domainName)

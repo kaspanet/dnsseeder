@@ -17,6 +17,7 @@ import (
 	"github.com/daglabs/btcd/connmgr"
 	"github.com/daglabs/btcd/peer"
 	"github.com/daglabs/btcd/signal"
+	"github.com/daglabs/btcd/util/subnetworkid"
 	"github.com/daglabs/btcd/wire"
 )
 
@@ -77,7 +78,7 @@ func creep() {
 				onVersion <- struct{}{}
 			},
 		},
-		SubnetworkID: &wire.SubnetworkIDSupportsAll,
+		SubnetworkID: subnetworkid.SubnetworkIDSupportsAll,
 	}
 
 	var wgCreep sync.WaitGroup
@@ -85,7 +86,7 @@ func creep() {
 		peers := amgr.Addresses()
 		if len(peers) == 0 && amgr.AddressCount() == 0 {
 			// Add peers discovered through DNS to the address manager.
-			connmgr.SeedFromDNS(activeNetParams, requiredServices, &wire.SubnetworkIDSupportsAll, hostLookup, func(addrs []*wire.NetAddress) {
+			connmgr.SeedFromDNS(activeNetParams, requiredServices, subnetworkid.SubnetworkIDSupportsAll, hostLookup, func(addrs []*wire.NetAddress) {
 				amgr.AddAddresses(addrs)
 			})
 			peers = amgr.Addresses()
