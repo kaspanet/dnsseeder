@@ -5,12 +5,7 @@ RUN mkdir -p /go/src/github.com/kaspanet/kaspad
 
 WORKDIR /go/src/github.com/kaspanet/kaspad
 
-RUN apk add --no-cache curl git openssh binutils gcc musl-dev
-RUN go get -u golang.org/x/lint/golint \
-      github.com/kisielk/errcheck \
-      github.com/opennota/check/cmd/aligncheck \
-      github.com/opennota/check/cmd/structcheck \
-      github.com/opennota/check/cmd/varcheck
+RUN apk add --no-cache curl git
 
 COPY go.mod .
 COPY go.sum .
@@ -19,26 +14,15 @@ RUN go mod download
 
 COPY . .
 
-RUN GOFMT_RESULT=`go fmt ./...`; echo $GOFMT_RESULT; test -z "$GOFMT_RESULT"
-RUN go vet ./...
-RUN golint -set_exit_status ./...
-# RUN aligncheck ./...
-# RUN structcheck -e ./...
-# RUN varcheck -e ./...
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o kaspad .
-
-# Remove the line below and uncomment the line after it for testing with coverage
-RUN go test -gcflags='-l' ./...
-# RUN ./test.sh
+RUN cd dnsseeder && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o dnsseeder .
 
 # --- multistage docker build: stage #2: runtime image
 FROM alpine
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates tini
+RUN apk add --no-cache tini
 
-COPY --from=build /go/src/github.com/kaspanet/kaspad/kaspad /app/
-COPY --from=build /go/src/github.com/kaspanet/kaspad/sample-kaspad.conf /app/
+COPY --from=build /go/src/github.com/kaspanet/kaspad/dnsseeder/ /app/
 
-USER nobody
-ENTRYPOINT [ "/sbin/tini", "--" ]
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["/app/dnsseeder"]

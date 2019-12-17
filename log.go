@@ -1,15 +1,27 @@
-// Copyright (c) 2013-2017 The btcsuite developers
-// Copyright (c) 2017 The Decred developers
-// Use of this source code is governed by an ISC
-// license that can be found in the LICENSE file.
-
 package main
 
 import (
-	"github.com/kaspanet/kaspad/logger"
+	"fmt"
+	"github.com/kaspanet/kaspad/logs"
 	"github.com/kaspanet/kaspad/util/panics"
+	"os"
 )
 
-var kasdLog, _ = logger.Get(logger.SubsystemTags.KASD)
-var spawn = panics.GoroutineWrapperFunc(kasdLog)
-var srvrLog, _ = logger.Get(logger.SubsystemTags.SRVR)
+var (
+	backendLog = logs.NewBackend()
+	log        = backendLog.Logger("SEED")
+	spawn      = panics.GoroutineWrapperFunc(log)
+)
+
+func initLog(logFile, errLogFile string) {
+	err := backendLog.AddLogFile(logFile, logs.LevelTrace)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error adding log file %s as log rotator for level %s: %s", logFile, logs.LevelTrace, err)
+		os.Exit(1)
+	}
+	err = backendLog.AddLogFile(errLogFile, logs.LevelWarn)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error adding log file %s as log rotator for level %s: %s", errLogFile, logs.LevelWarn, err)
+		os.Exit(1)
+	}
+}
