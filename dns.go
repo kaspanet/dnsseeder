@@ -180,6 +180,7 @@ func (d *DNSServer) buildDNSResponse(addr *net.UDPAddr, authority dns.RR, dnsMsg
 	if qtype != dns.TypeNS {
 		respMsg.Ns = append(respMsg.Ns, authority)
 		addrs := amgr.GoodAddresses(qtype, wantedSF, includeAllSubnetworks, subnetworkID)
+		log.Infof("%s: Sending %d addresses", addr, len(addrs))
 		for _, a := range addrs {
 			rr := fmt.Sprintf("%s 30 IN %s %s", dnsMsg.Question[0].Name, atype, a.IP.String())
 			newRR, err := dns.NewRR(rr)
