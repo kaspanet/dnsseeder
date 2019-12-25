@@ -157,6 +157,8 @@ func creep() {
 
 func main() {
 	defer panics.HandlePanic(log, nil, nil)
+	interrupt := signal.InterruptListener()
+
 	cfg, err := loadConfig()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "loadConfig: %v\n", err)
@@ -213,6 +215,5 @@ func main() {
 	// Wait until the interrupt signal is received from an OS signal or
 	// shutdown is requested through one of the subsystems such as the RPC
 	// server.
-	interrupt := signal.InterruptListener()
 	<-interrupt
 }
