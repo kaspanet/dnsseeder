@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/kaspanet/dnsseeder/version"
 	"github.com/kaspanet/kaspad/util/daghash"
 	"github.com/kaspanet/kaspad/util/panics"
 
@@ -56,8 +57,8 @@ func creep() {
 	onAddr := make(chan struct{})
 	onVersion := make(chan struct{})
 	cfg := peer.Config{
-		UserAgentName:    "daglabs-sniffer",
-		UserAgentVersion: "0.0.1",
+		UserAgentName:    "kaspa-dnsseeder",
+		UserAgentVersion: version.Version(),
 		DAGParams:        ActiveConfig().NetParams(),
 		DisableRelayTx:   true,
 		SelectedTip:      func() *daghash.Hash { return ActiveConfig().NetParams().GenesisBlock.BlockHash() },
@@ -164,6 +165,10 @@ func main() {
 		fmt.Fprintf(os.Stderr, "loadConfig: %v\n", err)
 		os.Exit(1)
 	}
+
+	// Show version at startup.
+	log.Infof("Version %s", version.Version())
+
 	amgr, err = NewManager(defaultHomeDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "NewManager: %v\n", err)
