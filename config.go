@@ -89,7 +89,6 @@ func loadConfig() (*ConfigFlags, error) {
 
 	appName := filepath.Base(os.Args[0])
 	appName = strings.TrimSuffix(appName, filepath.Ext(appName))
-	usageMessage := fmt.Sprintf("Use %s -h to show usage", appName)
 
 	// Show the version and exit if the version flag was specified.
 	if preCfg.ShowVersion {
@@ -104,7 +103,7 @@ func loadConfig() (*ConfigFlags, error) {
 		if _, ok := err.(*os.PathError); !ok {
 			fmt.Fprintf(os.Stderr, "Error parsing ConfigFlags "+
 				"file: %v\n", err)
-			fmt.Fprintln(os.Stderr, usageMessage)
+			fmt.Fprintf(os.Stderr, "Use `%s -h` to show usage\n", appName)
 			return nil, err
 		}
 	}
