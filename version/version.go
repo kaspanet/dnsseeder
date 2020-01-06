@@ -1,13 +1,12 @@
 package version
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 )
 
-// semanticAlphabet
-const semanticAlphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-"
+// validCharacters  is a list of characters valid in the appBuild string
+const validCharacters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-"
 
 const (
 	appMajor uint = 0
@@ -16,11 +15,11 @@ const (
 )
 
 // appBuild is defined as a variable so it can be overridden during the build
-// process with '-ldflags "-X github.com/kaspanet/dnssedder/version.appBuild=foo"' if needed.
-// It MUST only contain characters from semanticAlphabet.
+// process with '-ldflags "-X github.com/kaspanet/dnsseeder/version.appBuild=foo"' if needed.
+// It MUST only contain characters from validCharacters.
 var appBuild string
 
-var version = ""
+var version = "" // string used for memoization of version
 
 // Version returns the application version as a properly formed string
 func Version() string {
@@ -30,25 +29,22 @@ func Version() string {
 
 		// Append build metadata if there is any. The build metadata
 		// string is not appended if it contains invalid characters.
-		build := normalizeVerString(appBuild)
-		if build != "" {
-			version = fmt.Sprintf("%s-%s", version, build)
+		if appBuild != "" {
+			checkAppBuild(appBuild)
+
+			version = fmt.Sprintf("%s-%s", version, appBuild)
 		}
 	}
 
 	return version
 }
 
-// normalizeVerString returns the passed string stripped of all characters which
-// are not valid according to the semantic versioning guidelines for pre-release
-// version and build metadata strings. In particular they MUST only contain
-// characters in semanticAlphabet.
-func normalizeVerString(str string) string {
-	var result bytes.Buffer
-	for _, r := range str {
-		if strings.ContainsRune(semanticAlphabet, r) {
-			result.WriteRune(r)
+// checkAppBuild returns the passed string unless it contains any characters not in validCharacters
+// If any invalid characters are encountered - an empty string is returned
+func checkAppBuild(appBuild string) {
+	for _, r := range appBuild {
+		if !strings.ContainsRune(validCharacters, r) {
+			panic(fmt.Errorf("appBuild string (%s) contains forbidden characters. Only alphanumeric characters and dashes are allowed", appBuild))
 		}
 	}
-	return result.String()
 }
