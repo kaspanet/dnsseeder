@@ -8,16 +8,16 @@ Warning: This is pre-alpha software. There's no guarantee anything works.
 
 DNSSeeder exposes a list of known peers to any new peer joining the Kaspa network via the DNS protocol.
 
-When dnsseeder is started for the first time, it will connect to the kaspad node
+When DNSSeeder is started for the first time, it will connect to the kaspad node
 specified with the `-s` flag and listen for `addr` messages. These messages
-contain the IPs of all peers known by the node. dnsseeder will then connect to
+contain the IPs of all peers known by the node. DNSSeeder will then connect to
 each of these peers, listen for their `addr` messages, and continue to traverse
-the network in this fashion. dnsseeder maintains a list of all known peers and
+the network in this fashion. DNSSeeder maintains a list of all known peers and
 periodically checks that they are online and available. The list is stored on
 disk in a json file, so on subsequent start ups the kaspad node specified with
 `-s` does not need to be online.
 
-When dnsseeder is queried for node information, it responds with details of a
+When DNSSeeder is queried for node information, it responds with details of a
 random selection of the reliable nodes it knows about.
 
 It is written in Go (golang).
@@ -37,7 +37,7 @@ Latest version of [Go](http://golang.org) (currently 1.13)
 
 - Ensure Go was installed properly and is a supported version:
 
-- Launch a kaspad node for the dnsseeder to connect to
+- Launch a kaspad node for the DNSSeeder to connect to
 
 ```bash
 $ go version
@@ -73,7 +73,7 @@ Note: to listen directly on port 53 on most Unix systems, one has to run dnsseed
 
 ## Setting up DNS Records
 
-To create a working set-up where dnsseeder can provide IPs to kaspad instances, set the following DNS records:
+To create a working set-up where the DNSSeeder can provide IPs to kaspad instances, set the following DNS records:
 ```
 NAME                        TYPE        VALUE
 ----                        ----        -----
