@@ -6,8 +6,20 @@ Warning: This is pre-alpha software. There's no guarantee anything works.
 [![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
 [![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/kaspanet/dnsseeder)
 
-DNSSeeder is a a specialty software for the Kaspa network meant to expose
-a list of known peers to any new peer joining the network.
+DNSSeeder is exposes a list of known peers to any new peer joining the Kaspa network via the DNS protocol.
+
+When dnsseeder is started for the first time, it will connect to the kaspad node
+specified with the `-s` flag and listen for `addr` messages. These messages
+contain the IPs of all peers known by the node. dnsseeder will then connect to
+each of these peers, listen for their `addr` messages, and continue to traverse
+the network in this fashion. dnsseeder maintains a list of all known peers and
+periodically checks that they are online and available. The list is stored on
+disk in a json file, so on subsequent start ups the kaspad node specified with
+`-s` does not need to be online.
+
+When dnsseeder is queried for node information, it responds with details of a
+random selection of the reliable nodes it knows about.
+
 It is written in Go (golang).
 
 This project is currently under active development and is in a pre-Alpha state. 
