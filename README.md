@@ -1,5 +1,18 @@
-dnsseeder
-=========
+DNSSeeder
+====
+Warning: This is pre-alpha software. There's no guarantee anything works.
+====
+
+[![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/kaspanet/dnsseeder)
+
+DNSSeeder is a a specialty software for the Kaspa network meant to expose
+a list of known peers to any new peer joining the network.
+It is written in Go (golang).
+
+This project is currently under active development and is in a pre-Alpha state. 
+Some things still don't work and APIs are far from finalized. The code is provided for reference only.
+
 
 ## Requirements
 
