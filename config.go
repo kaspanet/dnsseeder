@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/kaspanet/dnsseeder/version"
 	"github.com/kaspanet/kaspad/config"
 	"github.com/pkg/errors"
 
@@ -42,10 +43,11 @@ func ActiveConfig() *ConfigFlags {
 
 // ConfigFlags holds the configurations set by the command line argument
 type ConfigFlags struct {
-	Host       string `short:"H" long:"host" description:"Seed DNS address"`
-	Listen     string `long:"listen" short:"l" description:"Listen on address:port"`
-	Nameserver string `short:"n" long:"nameserver" description:"hostname of nameserver"`
-	Seeder     string `short:"s" long:"default seeder" description:"IP address of a  working node"`
+	ShowVersion bool   `short:"V" long:"version" description:"Display version information and exit"`
+	Host        string `short:"H" long:"host" description:"Seed DNS address"`
+	Listen      string `long:"listen" short:"l" description:"Listen on address:port"`
+	Nameserver  string `short:"n" long:"nameserver" description:"hostname of nameserver"`
+	Seeder      string `short:"s" long:"default seeder" description:"IP address of a  working node"`
 	config.NetworkFlags
 }
 
@@ -87,7 +89,12 @@ func loadConfig() (*ConfigFlags, error) {
 
 	appName := filepath.Base(os.Args[0])
 	appName = strings.TrimSuffix(appName, filepath.Ext(appName))
-	usageMessage := fmt.Sprintf("Use %s -h to show usage", appName)
+
+	// Show the version and exit if the version flag was specified.
+	if preCfg.ShowVersion {
+		fmt.Println(appName, "version", version.Version())
+		os.Exit(0)
+	}
 
 	// Load additional config from file.
 	parser := flags.NewParser(activeConfig, flags.Default)
@@ -96,7 +103,7 @@ func loadConfig() (*ConfigFlags, error) {
 		if _, ok := err.(*os.PathError); !ok {
 			fmt.Fprintf(os.Stderr, "Error parsing ConfigFlags "+
 				"file: %v\n", err)
-			fmt.Fprintln(os.Stderr, usageMessage)
+			fmt.Fprintf(os.Stderr, "Use `%s -h` to show usage\n", appName)
 			return nil, err
 		}
 	}
