@@ -6,7 +6,8 @@ RUN mkdir -p /go/src/github.com/kaspanet/dnsseeder
 
 WORKDIR /go/src/github.com/kaspanet/dnsseeder
 
-RUN apk add --no-cache curl git
+RUN apk add --no-cache curl git openssh binutils gcc musl-dev
+RUN go get -u golang.org/x/lint/golint
 
 COPY go.mod .
 COPY go.sum .
