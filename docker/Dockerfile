@@ -24,6 +24,12 @@ COPY . .
 # Restore go.mod because `COPY . .` overwrote it
 RUN mv go.mod.bu go.mod
 
+# Run linters and tests
+RUN GOFMT_RESULT=`go fmt ./...`; echo $GOFMT_RESULT; test -z "$GOFMT_RESULT"
+RUN go vet ./...
+RUN golint -set_exit_status ./...
+RUN go test -gcflags='-l' ./...
+
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o dnsseeder .
 
 # --- multistage docker build: stage #2: runtime image
