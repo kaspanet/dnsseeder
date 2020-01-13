@@ -1,6 +1,5 @@
 # -- multistage docker build: stage #1: build stage
 FROM golang:1.13-alpine AS build
-ARG KASPAD_VERSION
 
 RUN mkdir -p /go/src/github.com/kaspanet/dnsseeder
 
@@ -15,6 +14,7 @@ COPY go.sum .
 # For development it's useful to have kaspad from filesystem, but for deployment
 # we should use the one in github
 RUN go mod edit -dropreplace github.com/kaspanet/kaspad
+ARG KASPAD_VERSION
 RUN if [ -n "${KASPAD_VERSION}" ]; then go mod edit -require github.com/kaspanet/kaspad@$KASPAD_VERSION; fi
 RUN cp go.mod go.mod.bu
 
