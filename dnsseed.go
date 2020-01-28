@@ -61,7 +61,7 @@ func creep() {
 		UserAgentVersion: version.Version(),
 		DAGParams:        ActiveConfig().NetParams(),
 		DisableRelayTx:   true,
-		SelectedTip:      func() *daghash.Hash { return ActiveConfig().NetParams().GenesisBlock.BlockHash() },
+		SelectedTipHash:  func() *daghash.Hash { return ActiveConfig().NetParams().GenesisBlock.BlockHash() },
 
 		Listeners: peer.MessageListeners{
 			OnAddr: func(p *peer.Peer, msg *wire.MsgAddr) {
