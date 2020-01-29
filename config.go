@@ -20,8 +20,8 @@ import (
 )
 
 const (
-	defaultConfigFilename = "dnsseeder.conf"
 	defaultLogFilename    = "dnsseeder.log"
+	defaultConfigFilename = "dnsseeder.conf"
 	defaultErrLogFilename = "dnsseeder_err.log"
 	defaultListenPort     = "5354"
 )
