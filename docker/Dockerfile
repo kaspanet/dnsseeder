@@ -15,7 +15,10 @@ COPY go.sum .
 # we should use the one in github
 RUN go mod edit -dropreplace github.com/kaspanet/kaspad
 ARG KASPAD_VERSION
-RUN if [ -n "${KASPAD_VERSION}" ]; then go mod edit -require github.com/kaspanet/kaspad@$KASPAD_VERSION; fi
+RUN if [ -n "${KASPAD_VERSION}" ]; then \
+        # use replace instead of require - to propagate into nested dependancies
+        go mod edit -replace github.com/kaspanet/kaspad=github.com/kaspanet/kaspad@$KASPAD_VERSION ;\
+    fi
 RUN cp go.mod go.mod.bu
 
 RUN go mod download
