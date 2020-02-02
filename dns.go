@@ -61,7 +61,8 @@ func (d *DNSServer) Start() {
 		}
 		_, addr, err := udpListen.ReadFromUDP(b)
 		if err != nil {
-			if err, ok := err.(net.Error); ok && err.Timeout() {
+			var netErr net.Error
+			if errors.As(err, &netErr) && netErr.Timeout() {
 				if atomic.LoadInt32(&systemShutdown) == 0 {
 					// use goto in order to do not re-allocate 'b' buffer
 					goto mainLoop
@@ -69,7 +70,12 @@ func (d *DNSServer) Start() {
 				log.Infof("DNS server shutdown")
 				return
 			}
-			log.Infof("Read: %T", err.(*net.OpError).Err)
+			var opErr *net.OpError
+			if errors.As(err, &opErr) {
+				log.Infof("Read: %T", opErr.Err)
+			} else {
+				log.Errorf("Unknown error: %s", err)
+			}
 			continue
 		}
 
