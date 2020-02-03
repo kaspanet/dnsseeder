@@ -57,15 +57,16 @@ func loadConfig() (*ConfigFlags, error) {
 		// Show a nicer error message if it's because a symlink is
 		// linked to a directory that does not exist (probably because
 		// it's not mounted).
-		if e, ok := err.(*os.PathError); ok && os.IsExist(err) {
-			if link, lerr := os.Readlink(e.Path); lerr == nil {
+		var pathErr *os.PathError
+		if ok := errors.As(err, &pathErr); ok && os.IsExist(err) {
+			if link, linkErr := os.Readlink(pathErr.Path); linkErr == nil {
 				str := "is symlink %s -> %s mounted?"
-				err = errors.Errorf(str, e.Path, link)
+				err = errors.Errorf(str, pathErr.Path, link)
 			}
 		}
 
 		str := "failed to create home directory: %v"
-		err := errors.Errorf(str, err)
+		err := errors.Wrap(err, str)
 		fmt.Fprintln(os.Stderr, err)
 		return nil, err
 	}
@@ -79,8 +80,8 @@ func loadConfig() (*ConfigFlags, error) {
 	preParser := flags.NewParser(preCfg, flags.Default)
 	_, err = preParser.Parse()
 	if err != nil {
-		e, ok := err.(*flags.Error)
-		if ok && e.Type == flags.ErrHelp {
+		var flagsErr *flags.Error
+		if errors.As(err, &flagsErr) && flagsErr.Type == flags.ErrHelp {
 			os.Exit(0)
 		}
 		preParser.WriteHelp(os.Stderr)
@@ -100,7 +101,8 @@ func loadConfig() (*ConfigFlags, error) {
 	parser := flags.NewParser(activeConfig, flags.Default)
 	err = flags.NewIniParser(parser).ParseFile(defaultConfigFile)
 	if err != nil {
-		if _, ok := err.(*os.PathError); !ok {
+		var pathErr *os.PathError
+		if !errors.As(err, &pathErr) {
 			fmt.Fprintf(os.Stderr, "Error parsing ConfigFlags "+
 				"file: %v\n", err)
 			fmt.Fprintf(os.Stderr, "Use `%s -h` to show usage\n", appName)
@@ -111,7 +113,8 @@ func loadConfig() (*ConfigFlags, error) {
 	// Parse command line options again to ensure they take precedence.
 	_, err = parser.Parse()
 	if err != nil {
-		if e, ok := err.(*flags.Error); !ok || e.Type != flags.ErrHelp {
+		var flagsErr *flags.Error
+		if errors.As(err, &flagsErr) && flagsErr.Type != flags.ErrHelp {
 			parser.WriteHelp(os.Stderr)
 		}
 		return nil, err
