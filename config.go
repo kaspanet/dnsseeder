@@ -47,7 +47,7 @@ type ConfigFlags struct {
 	Host        string `short:"H" long:"host" description:"Seed DNS address"`
 	Listen      string `long:"listen" short:"l" description:"Listen on address:port"`
 	Nameserver  string `short:"n" long:"nameserver" description:"hostname of nameserver"`
-	Seeder      string `short:"s" long:"default seeder" description:"IP address of a  working node"`
+	Seeder      string `short:"s" long:"default-seeder" description:"IP address of a  working node"`
 	config.NetworkFlags
 }
 
