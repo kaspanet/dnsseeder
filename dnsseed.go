@@ -157,7 +157,7 @@ func creep() {
 }
 
 func main() {
-	defer panics.HandlePanic(log, nil, nil)
+	defer panics.HandlePanic(log, nil)
 	interrupt := signal.InterruptListener()
 
 	cfg, err := loadConfig()
