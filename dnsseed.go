@@ -7,7 +7,6 @@ package main
 import (
 	"fmt"
 	"net"
-	"net/http"
 	"os"
 	"strconv"
 	"sync"
@@ -17,6 +16,7 @@ import (
 	"github.com/kaspanet/dnsseeder/version"
 	"github.com/kaspanet/kaspad/util/daghash"
 	"github.com/kaspanet/kaspad/util/panics"
+	"github.com/kaspanet/kaspad/util/profiling"
 
 	"github.com/kaspanet/kaspad/connmgr"
 	"github.com/kaspanet/kaspad/peer"
@@ -174,13 +174,7 @@ func main() {
 
 	// Enable http profiling server if requested.
 	if cfg.Profile != "" {
-		spawn(func() {
-			listenAddr := net.JoinHostPort("", cfg.Profile)
-			log.Infof("Profile server listening on %s", listenAddr)
-			profileRedirect := http.RedirectHandler("/debug/pprof", http.StatusSeeOther)
-			http.Handle("/", profileRedirect)
-			log.Errorf("%s", http.ListenAndServe(listenAddr, nil))
-		})
+		profiling.Start(cfg.Profile)
 	}
 
 	amgr, err = NewManager(defaultHomeDir)
