@@ -7,6 +7,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"strconv"
 	"sync"
@@ -21,6 +22,8 @@ import (
 	"github.com/kaspanet/kaspad/peer"
 	"github.com/kaspanet/kaspad/signal"
 	"github.com/kaspanet/kaspad/wire"
+
+	_ "net/http/pprof"
 )
 
 const (
@@ -168,6 +171,17 @@ func main() {
 
 	// Show version at startup.
 	log.Infof("Version %s", version.Version())
+
+	// Enable http profiling server if requested.
+	if cfg.Profile != "" {
+		spawn(func() {
+			listenAddr := net.JoinHostPort("", cfg.Profile)
+			log.Infof("Profile server listening on %s", listenAddr)
+			profileRedirect := http.RedirectHandler("/debug/pprof", http.StatusSeeOther)
+			http.Handle("/", profileRedirect)
+			log.Errorf("%s", http.ListenAndServe(listenAddr, nil))
+		})
+	}
 
 	amgr, err = NewManager(defaultHomeDir)
 	if err != nil {
