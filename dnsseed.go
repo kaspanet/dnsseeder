@@ -174,7 +174,7 @@ func main() {
 
 	// Enable http profiling server if requested.
 	if cfg.Profile != "" {
-		profiling.Start(cfg.Profile)
+		profiling.Start(cfg.Profile, log)
 	}
 
 	amgr, err = NewManager(defaultHomeDir)
