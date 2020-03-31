@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/kaspanet/dnsseeder/version"
@@ -48,6 +49,7 @@ type ConfigFlags struct {
 	Listen      string `long:"listen" short:"l" description:"Listen on address:port"`
 	Nameserver  string `short:"n" long:"nameserver" description:"hostname of nameserver"`
 	Seeder      string `short:"s" long:"default-seeder" description:"IP address of a  working node"`
+	Profile     string `long:"profile" description:"Enable HTTP profiling on given port -- NOTE port must be between 1024 and 65536"`
 	config.NetworkFlags
 }
 
@@ -139,6 +141,13 @@ func loadConfig() (*ConfigFlags, error) {
 	err = activeConfig.ResolveNetwork(parser)
 	if err != nil {
 		return nil, err
+	}
+
+	if activeConfig.Profile != "" {
+		profilePort, err := strconv.Atoi(activeConfig.Profile)
+		if err != nil || profilePort < 1024 || profilePort > 65535 {
+			return nil, errors.New("The profile port must be between 1024 and 65535")
+		}
 	}
 
 	initLog(defaultLogFile, defaultErrLogFile)

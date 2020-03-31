@@ -16,11 +16,14 @@ import (
 	"github.com/kaspanet/dnsseeder/version"
 	"github.com/kaspanet/kaspad/util/daghash"
 	"github.com/kaspanet/kaspad/util/panics"
+	"github.com/kaspanet/kaspad/util/profiling"
 
 	"github.com/kaspanet/kaspad/connmgr"
 	"github.com/kaspanet/kaspad/peer"
 	"github.com/kaspanet/kaspad/signal"
 	"github.com/kaspanet/kaspad/wire"
+
+	_ "net/http/pprof"
 )
 
 const (
@@ -168,6 +171,11 @@ func main() {
 
 	// Show version at startup.
 	log.Infof("Version %s", version.Version())
+
+	// Enable http profiling server if requested.
+	if cfg.Profile != "" {
+		profiling.Start(cfg.Profile, log)
+	}
 
 	amgr, err = NewManager(defaultHomeDir)
 	if err != nil {
