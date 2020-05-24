@@ -78,10 +78,15 @@ func creep() {
 					p.NA().IP.String(), msg.Services, msg.SubnetworkID)
 				// Mark this peer as a good node.
 				amgr.Good(p.NA().IP, msg.Services, msg.SubnetworkID)
-				// Ask peer for some addresses.
-				p.QueueMessage(wire.NewMsgGetAddr(true, nil), nil)
-				// notify that version is received and Peer's subnetwork ID is updated
-				onVersion <- struct{}{}
+
+				// The following is in a separate goroutine to avoid a deadlock in which
+				// OnVersion blocks AssociateConnection and AssociateConnection blocks QueueMessage.
+				spawn(func() {
+					// Ask peer for some addresses.
+					p.QueueMessage(wire.NewMsgGetAddr(true, nil), nil)
+					// notify that version is received and Peer's subnetwork ID is updated
+					onVersion <- struct{}{}
+				})
 			},
 		},
 	}
@@ -129,12 +134,16 @@ func creep() {
 				amgr.Attempt(addr.IP)
 				conn, err := net.DialTimeout("tcp", p.Addr(), nodeTimeout)
 				if err != nil {
-					log.Warnf("%v", err)
+					log.Warnf("DialTimeout on %v: %v", host, err)
 					return
 				}
-				p.AssociateConnection(conn)
+				err = p.AssociateConnection(conn)
+				if err != nil {
+					log.Warnf("AssociateConnection on %v: %v", host, err)
+					return
+				}
 
-				// Wait version messsage or timeout in case of failure.
+				// Wait version message or timeout in case of failure.
 				select {
 				case <-onVersion:
 				case <-time.After(nodeTimeout):
