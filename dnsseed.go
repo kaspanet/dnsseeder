@@ -120,6 +120,7 @@ func creep() {
 				if err != nil {
 					log.Warnf(err.Error())
 					if defaultSeeder != nil && addr == defaultSeeder {
+						log.Criticalf("Failed to poll default seeder. Exiting...")
 						os.Exit(1)
 					}
 				}
