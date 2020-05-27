@@ -41,6 +41,7 @@ var (
 	wg               sync.WaitGroup
 	peersDefaultPort int
 	systemShutdown   int32
+	defaultSeeder    *wire.NetAddress
 )
 
 // hostLookup returns the correct DNS lookup function to use depending on the
@@ -203,9 +204,8 @@ func main() {
 			}
 		}
 		if ip != nil {
-			amgr.AddAddresses([]*wire.NetAddress{
-				wire.NewNetAddressIPPort(ip, uint16(peersDefaultPort),
-					requiredServices)})
+			defaultSeeder = wire.NewNetAddressIPPort(ip, uint16(peersDefaultPort), requiredServices)
+			amgr.AddAddresses([]*wire.NetAddress{defaultSeeder})
 		}
 	}
 
