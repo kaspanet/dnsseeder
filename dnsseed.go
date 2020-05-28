@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"net"
 	"os"
 	"strconv"
@@ -41,6 +42,7 @@ var (
 	wg               sync.WaitGroup
 	peersDefaultPort int
 	systemShutdown   int32
+	defaultSeeder    *wire.NetAddress
 )
 
 // hostLookup returns the correct DNS lookup function to use depending on the
@@ -114,42 +116,48 @@ func creep() {
 			go func(addr *wire.NetAddress) {
 				defer wgCreep.Done()
 
-				host := net.JoinHostPort(addr.IP.String(), strconv.Itoa(int(addr.Port)))
-				p, err := peer.NewOutboundPeer(&cfg, host)
+				err := pollPeer(cfg, addr, onAddr)
 				if err != nil {
-					log.Warnf("NewOutboundPeer on %v: %v",
-						host, err)
-					return
+					log.Warnf(err.Error())
+					if defaultSeeder != nil && addr == defaultSeeder {
+						panics.Exit(log, "failed to poll default seeder")
+					}
 				}
-				amgr.Attempt(addr.IP)
-				conn, err := net.DialTimeout("tcp", p.Addr(), nodeTimeout)
-				if err != nil {
-					log.Warnf("DialTimeout on %v: %v", host, err)
-					return
-				}
-				err = p.AssociateConnection(conn)
-				if err != nil {
-					log.Warnf("AssociateConnection on %v: %v", host, err)
-					p.Disconnect()
-					return
-				}
-
-				// Ask peer for some addresses.
-				p.QueueMessage(wire.NewMsgGetAddr(true, nil), nil)
-
-				select {
-				case <-onAddr:
-				case <-time.After(nodeTimeout):
-					log.Warnf("getaddr timeout on peer %v",
-						p.Addr())
-					p.Disconnect()
-					return
-				}
-				p.Disconnect()
 			}(addr)
 		}
 		wgCreep.Wait()
 	}
+}
+
+func pollPeer(cfg peer.Config, addr *wire.NetAddress, onAddr chan struct{}) error {
+	host := net.JoinHostPort(addr.IP.String(), strconv.Itoa(int(addr.Port)))
+
+	p, err := peer.NewOutboundPeer(&cfg, host)
+	if err != nil {
+		return errors.Errorf("NewOutboundPeer on %v: %v", host, err)
+	}
+	defer p.Disconnect()
+
+	amgr.Attempt(addr.IP)
+	conn, err := net.DialTimeout("tcp", p.Addr(), nodeTimeout)
+	if err != nil {
+		return errors.Errorf("DialTimeout on %v: %v", host, err)
+	}
+	err = p.AssociateConnection(conn)
+	if err != nil {
+		return errors.Errorf("AssociateConnection on %v: %v", host, err)
+	}
+
+	// Ask peer for some addresses.
+	p.QueueMessage(wire.NewMsgGetAddr(true, nil), nil)
+
+	select {
+	case <-onAddr:
+	case <-time.After(nodeTimeout):
+		return errors.Errorf("getaddr timeout on peer %v", p.Addr())
+	}
+
+	return nil
 }
 
 func main() {
@@ -196,9 +204,8 @@ func main() {
 			}
 		}
 		if ip != nil {
-			amgr.AddAddresses([]*wire.NetAddress{
-				wire.NewNetAddressIPPort(ip, uint16(peersDefaultPort),
-					requiredServices)})
+			defaultSeeder = wire.NewNetAddressIPPort(ip, uint16(peersDefaultPort), requiredServices)
+			amgr.AddAddresses([]*wire.NetAddress{defaultSeeder})
 		}
 	}
 
