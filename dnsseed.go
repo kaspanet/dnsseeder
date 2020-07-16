@@ -69,7 +69,7 @@ func creep() {
 		SelectedTipHash:  func() *daghash.Hash { return ActiveConfig().NetParams().GenesisBlock.BlockHash() },
 
 		Listeners: peer.MessageListeners{
-			OnAddr: func(p *peer.Peer, msg *wire.MsgAddr) {
+			OnAddr: func(p *peer.Peer, msg *wire.MsgAddresses) {
 				added := amgr.AddAddresses(msg.AddrList)
 				log.Infof("Peer %v sent %v addresses, %d new",
 					p.Addr(), len(msg.AddrList), added)
@@ -151,7 +151,7 @@ func pollPeer(cfg peer.Config, addr *wire.NetAddress, onAddr chan struct{}) erro
 	}
 
 	// Ask peer for some addresses.
-	p.QueueMessage(wire.NewMsgGetAddr(true, nil), nil)
+	p.QueueMessage(wire.NewMsgGetAddresses(true, nil), nil)
 
 	select {
 	case <-onAddr:
