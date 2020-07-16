@@ -6,7 +6,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"net"
 	"os"
 	"strconv"
@@ -14,12 +13,14 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/kaspanet/dnsseeder/version"
+	"github.com/kaspanet/kaspad/dnsseed"
 	"github.com/kaspanet/kaspad/util/daghash"
 	"github.com/kaspanet/kaspad/util/panics"
 	"github.com/kaspanet/kaspad/util/profiling"
 
-	"github.com/kaspanet/kaspad/connmgr"
 	"github.com/kaspanet/kaspad/peer"
 	"github.com/kaspanet/kaspad/signal"
 	"github.com/kaspanet/kaspad/wire"
@@ -68,7 +69,7 @@ func creep() {
 		SelectedTipHash:  func() *daghash.Hash { return ActiveConfig().NetParams().GenesisBlock.BlockHash() },
 
 		Listeners: peer.MessageListeners{
-			OnAddr: func(p *peer.Peer, msg *wire.MsgAddr) {
+			OnAddr: func(p *peer.Peer, msg *wire.MsgAddresses) {
 				added := amgr.AddAddresses(msg.AddrList)
 				log.Infof("Peer %v sent %v addresses, %d new",
 					p.Addr(), len(msg.AddrList), added)
@@ -88,9 +89,10 @@ func creep() {
 		peers := amgr.Addresses()
 		if len(peers) == 0 && amgr.AddressCount() == 0 {
 			// Add peers discovered through DNS to the address manager.
-			connmgr.SeedFromDNS(ActiveConfig().NetParams(), requiredServices, true, nil, hostLookup, func(addrs []*wire.NetAddress) {
-				amgr.AddAddresses(addrs)
-			})
+			dnsseed.SeedFromDNS(ActiveConfig().NetParams(), requiredServices, true,
+				nil, hostLookup, func(addrs []*wire.NetAddress) {
+					amgr.AddAddresses(addrs)
+				})
 			peers = amgr.Addresses()
 		}
 		if len(peers) == 0 {
@@ -149,7 +151,7 @@ func pollPeer(cfg peer.Config, addr *wire.NetAddress, onAddr chan struct{}) erro
 	}
 
 	// Ask peer for some addresses.
-	p.QueueMessage(wire.NewMsgGetAddr(true, nil), nil)
+	p.QueueMessage(wire.NewMsgGetAddresses(true, nil), nil)
 
 	select {
 	case <-onAddr:
