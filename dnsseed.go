@@ -30,10 +30,6 @@ import (
 )
 
 const (
-	// nodeTimeout defines the timeout time waiting for
-	// a response from a node.
-	nodeTimeout = time.Second * 3
-
 	// requiredServices describes the default services that are
 	// required to be supported by outbound peers.
 	requiredServices = wire.SFNodeNetwork
@@ -61,7 +57,7 @@ func hostLookup(host string) ([]net.IP, error) {
 func creep() {
 	defer wg.Done()
 
-	netAdapter, err := netadaptermock.New(&config.Config{})
+	netAdapter, err := netadaptermock.New(&config.Config{Flags: &config.Flags{}})
 	if err != nil {
 		log.Errorf("Could not start net adapter")
 		return
