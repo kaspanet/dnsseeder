@@ -6,6 +6,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/kaspanet/kaspad/config"
+	"github.com/kaspanet/kaspad/netadapter/netadaptermock"
+	"github.com/kaspanet/kaspad/protocol/common"
 	"net"
 	"os"
 	"strconv"
@@ -17,7 +20,6 @@ import (
 
 	"github.com/kaspanet/dnsseeder/version"
 	"github.com/kaspanet/kaspad/dnsseed"
-	"github.com/kaspanet/kaspad/util/daghash"
 	"github.com/kaspanet/kaspad/util/panics"
 	"github.com/kaspanet/kaspad/util/profiling"
 
@@ -59,28 +61,10 @@ func hostLookup(host string) ([]net.IP, error) {
 func creep() {
 	defer wg.Done()
 
-	onAddr := make(chan struct{})
-	cfg := peer.Config{
-		UserAgentName:    "kaspa-dnsseeder",
-		UserAgentVersion: version.Version(),
-		DAGParams:        ActiveConfig().NetParams(),
-		DisableRelayTx:   true,
-		SelectedTipHash:  func() *daghash.Hash { return ActiveConfig().NetParams().GenesisBlock.BlockHash() },
-
-		Listeners: peer.MessageListeners{
-			OnAddr: func(p *peer.Peer, msg *wire.MsgAddresses) {
-				added := amgr.AddAddresses(msg.AddrList)
-				log.Infof("Peer %v sent %v addresses, %d new",
-					p.Addr(), len(msg.AddrList), added)
-				onAddr <- struct{}{}
-			},
-			OnVersion: func(p *peer.Peer, msg *wire.MsgVersion) {
-				log.Infof("Adding peer %v with services %v and subnetword ID %v",
-					p.NA().IP.String(), msg.Services, msg.SubnetworkID)
-				// Mark this peer as a good node.
-				amgr.Good(p.NA().IP, msg.Services, msg.SubnetworkID)
-			},
-		},
+	netAdapter, err := netadaptermock.New(&config.Config{})
+	if err != nil {
+		log.Errorf("Could not start net adapter")
+		return
 	}
 
 	var wgCreep sync.WaitGroup
@@ -117,7 +101,7 @@ func creep() {
 			go func(addr *wire.NetAddress) {
 				defer wgCreep.Done()
 
-				err := pollPeer(cfg, addr, onAddr)
+				err := pollPeer(netAdapter, addr)
 				if err != nil {
 					log.Warnf(err.Error())
 					if defaultSeeder != nil && addr == defaultSeeder {
@@ -130,33 +114,30 @@ func creep() {
 	}
 }
 
-func pollPeer(cfg peer.Config, addr *wire.NetAddress, onAddr chan struct{}) error {
-	host := net.JoinHostPort(addr.IP.String(), strconv.Itoa(int(addr.Port)))
+func pollPeer(netAdapter *netadaptermock.NetAdapterMock, addr *wire.NetAddress) error {
+	peerAddress := net.JoinHostPort(addr.IP.String(), strconv.Itoa(int(addr.Port)))
 
-	p, err := peer.NewOutboundPeer(&cfg, host)
+	routes, err := netAdapter.Connect(peerAddress)
 	if err != nil {
-		return errors.Errorf("NewOutboundPeer on %v: %v", host, err)
+		return errors.Wrapf(err, "could not connect to %s", peerAddress)
 	}
-	defer p.Disconnect()
+	defer routes.Close()
 
-	amgr.Attempt(addr.IP)
-	conn, err := net.DialTimeout("tcp", p.Addr(), nodeTimeout)
+	msgRequestAddresses := wire.NewMsgRequestAddresses(true, nil)
+	err = routes.OutgoingRoute.Enqueue(msgRequestAddresses)
 	if err != nil {
-		return errors.Errorf("DialTimeout on %v: %v", host, err)
+		return errors.Wrapf(err, "failed to request addresses from %s", peerAddress)
 	}
-	err = p.AssociateConnection(conn)
+
+	message, err := routes.WaitForMessageOfType(wire.CmdAddresses, common.DefaultTimeout)
 	if err != nil {
-		return errors.Errorf("AssociateConnection on %v: %v", host, err)
+		return errors.Wrapf(err, "failed to receive addresses from %s", peerAddress)
 	}
+	msgAddresses := message.(*wire.MsgAddresses)
 
-	// Ask peer for some addresses.
-	p.QueueMessage(wire.NewMsgGetAddresses(true, nil), nil)
-
-	select {
-	case <-onAddr:
-	case <-time.After(nodeTimeout):
-		return errors.Errorf("getaddr timeout on peer %v", p.Addr())
-	}
+	added := amgr.AddAddresses(msgAddresses.AddrList)
+	log.Infof("Peer %s sent %d addresses, %d new",
+		peerAddress, len(msgAddresses.AddrList), added)
 
 	return nil
 }
