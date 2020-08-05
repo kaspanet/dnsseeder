@@ -88,7 +88,7 @@ func creep() {
 		peers := amgr.Addresses()
 		if len(peers) == 0 && amgr.AddressCount() == 0 {
 			// Add peers discovered through DNS to the address manager.
-			dnsseed.SeedFromDNS(ActiveConfig().NetParams(), requiredServices, true,
+			dnsseed.SeedFromDNS(ActiveConfig().NetParams(), "", requiredServices, true,
 				nil, hostLookup, func(addrs []*wire.NetAddress) {
 					amgr.AddAddresses(addrs)
 				})
