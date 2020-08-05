@@ -7,7 +7,7 @@ package main
 import (
 	"fmt"
 	"github.com/kaspanet/kaspad/config"
-	"github.com/kaspanet/kaspad/netadapter/netadaptermock"
+	"github.com/kaspanet/kaspad/netadapter/standalone"
 	"github.com/kaspanet/kaspad/protocol/common"
 	"net"
 	"os"
@@ -57,7 +57,7 @@ func hostLookup(host string) ([]net.IP, error) {
 func creep() {
 	defer wg.Done()
 
-	netAdapter, err := netadaptermock.New(&config.Config{Flags: &config.Flags{}})
+	netAdapter, err := standalone.NewMinimalNetAdapter(&config.Config{Flags: &config.Flags{}})
 	if err != nil {
 		log.Errorf("Could not start net adapter")
 		return
@@ -110,14 +110,14 @@ func creep() {
 	}
 }
 
-func pollPeer(netAdapter *netadaptermock.NetAdapterMock, addr *wire.NetAddress) error {
+func pollPeer(netAdapter *standalone.MinimalNetAdapter, addr *wire.NetAddress) error {
 	peerAddress := net.JoinHostPort(addr.IP.String(), strconv.Itoa(int(addr.Port)))
 
 	routes, err := netAdapter.Connect(peerAddress)
 	if err != nil {
 		return errors.Wrapf(err, "could not connect to %s", peerAddress)
 	}
-	defer routes.Close()
+	defer routes.Disconnect()
 
 	msgRequestAddresses := wire.NewMsgRequestAddresses(true, nil)
 	err = routes.OutgoingRoute.Enqueue(msgRequestAddresses)
