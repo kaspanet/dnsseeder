@@ -14,7 +14,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/kaspanet/kaspad/connmgr"
 	"github.com/kaspanet/kaspad/util/subnetworkid"
 	"github.com/kaspanet/kaspad/wire"
 	"github.com/miekg/dns"
@@ -81,7 +80,8 @@ func (d *DNSServer) Start() {
 
 		wg.Add(1)
 
-		spawn(func() { d.handleDNSRequest(addr, authority, udpListen, b) })
+		spawn("DNSServer.Start-DNSServer.handleDNSRequest",
+			func() { d.handleDNSRequest(addr, authority, udpListen, b) })
 	}
 }
 

@@ -21,7 +21,6 @@ import (
 	"github.com/kaspanet/kaspad/util/panics"
 	"github.com/kaspanet/kaspad/util/profiling"
 
-	"github.com/kaspanet/kaspad/peer"
 	"github.com/kaspanet/kaspad/signal"
 	"github.com/kaspanet/kaspad/wire"
 
@@ -212,11 +211,11 @@ func main() {
 	}
 
 	wg.Add(1)
-	spawn(creep)
+	spawn("main-creep", creep)
 
 	dnsServer := NewDNSServer(cfg.Host, cfg.Nameserver, cfg.Listen)
 	wg.Add(1)
-	spawn(dnsServer.Start)
+	spawn("main-DNSServer.Start", dnsServer.Start)
 
 	defer func() {
 		log.Infof("Gracefully shutting down the seeder...")
