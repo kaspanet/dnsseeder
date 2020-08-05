@@ -135,6 +135,9 @@ func pollPeer(netAdapter *standalone.MinimalNetAdapter, addr *wire.NetAddress) e
 	log.Infof("Peer %s sent %d addresses, %d new",
 		peerAddress, len(msgAddresses.AddrList), added)
 
+	amgr.Attempt(addr.IP)
+	amgr.Good(addr.IP, requiredServices, nil)
+
 	return nil
 }
 
