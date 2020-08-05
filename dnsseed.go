@@ -162,7 +162,7 @@ func pollPeer(cfg peer.Config, addr *wire.NetAddress, onAddr chan struct{}) erro
 }
 
 func main() {
-	defer panics.HandlePanic(log, nil)
+	defer panics.HandlePanic(log, "main", nil)
 	interrupt := signal.InterruptListener()
 
 	cfg, err := loadConfig()
