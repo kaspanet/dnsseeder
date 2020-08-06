@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/kaspanet/kaspad/dnsseed"
 	"github.com/pkg/errors"
 	"net"
 	"os"
@@ -14,7 +15,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/kaspanet/kaspad/connmgr"
 	"github.com/kaspanet/kaspad/util/subnetworkid"
 	"github.com/kaspanet/kaspad/wire"
 	"github.com/miekg/dns"
@@ -81,7 +81,8 @@ func (d *DNSServer) Start() {
 
 		wg.Add(1)
 
-		spawn(func() { d.handleDNSRequest(addr, authority, udpListen, b) })
+		spawn("DNSServer.Start-DNSServer.handleDNSRequest",
+			func() { d.handleDNSRequest(addr, authority, udpListen, b) })
 	}
 }
 
@@ -111,7 +112,7 @@ func (d *DNSServer) extractServicesSubnetworkID(addr *net.UDPAddr, domainName st
 	if d.hostname != domainName {
 		idx := 0
 		labels := dns.SplitDomainName(domainName)
-		if labels[0][0] == connmgr.SubnetworkIDPrefixChar {
+		if labels[0][0] == dnsseed.SubnetworkIDPrefixChar {
 			includeAllSubnetworks = false
 			if len(labels[0]) > 1 {
 				idx = 1
@@ -122,7 +123,7 @@ func (d *DNSServer) extractServicesSubnetworkID(addr *net.UDPAddr, domainName st
 				}
 			}
 		}
-		if labels[idx][0] == connmgr.ServiceFlagPrefixChar && len(labels[idx]) > 1 {
+		if labels[idx][0] == dnsseed.ServiceFlagPrefixChar && len(labels[idx]) > 1 {
 			wantedSFStr := labels[idx][1:]
 			u, err := strconv.ParseUint(wantedSFStr, 10, 64)
 			if err != nil {
