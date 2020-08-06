@@ -19,6 +19,9 @@ RUN if [ -n "${KASPAD_VERSION}" ]; then \
         # use replace instead of require - to propagate into nested dependancies
         go mod edit -replace github.com/kaspanet/kaspad=github.com/kaspanet/kaspad@$KASPAD_VERSION ;\
     fi
+
+RUN cat go.mod # ~~~~~~~~~~~~~~~~ TODO: Remove THIS!!!!
+
 RUN cp go.mod go.mod.bu
 
 RUN go mod download
@@ -27,6 +30,8 @@ COPY . .
 
 # Restore go.mod because `COPY . .` overwrote it
 RUN mv go.mod.bu go.mod
+
+RUN cat go.mod # ~~~~~~~~~~~~~~~~ TODO: Remove THIS!!!!
 
 # Run linters and tests
 RUN GOFMT_RESULT=`go fmt ./...`; echo $GOFMT_RESULT; test -z "$GOFMT_RESULT"
