@@ -6,6 +6,7 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/kaspanet/kaspad/domainmessage"
 	"github.com/pkg/errors"
 	"net"
 	"os"
@@ -14,14 +15,13 @@ import (
 	"time"
 
 	"github.com/kaspanet/kaspad/util/subnetworkid"
-	"github.com/kaspanet/kaspad/wire"
 	"github.com/miekg/dns"
 )
 
 // Node repesents a node in the Kaspa network
 type Node struct {
-	Addr         *wire.NetAddress
-	Services     wire.ServiceFlag
+	Addr         *domainmessage.NetAddress
+	Services     domainmessage.ServiceFlag
 	LastAttempt  time.Time
 	LastSuccess  time.Time
 	LastSeen     time.Time
@@ -148,7 +148,7 @@ func NewManager(dataDir string) (*Manager, error) {
 
 // AddAddresses adds an address to this dnsseeder manager, and returns the number of
 // address currently held
-func (m *Manager) AddAddresses(addrs []*wire.NetAddress) int {
+func (m *Manager) AddAddresses(addrs []*domainmessage.NetAddress) int {
 	var count int
 
 	m.mtx.Lock()
@@ -176,8 +176,8 @@ func (m *Manager) AddAddresses(addrs []*wire.NetAddress) int {
 }
 
 // Addresses returns IPs that need to be tested again.
-func (m *Manager) Addresses() []*wire.NetAddress {
-	addrs := make([]*wire.NetAddress, 0, defaultMaxAddresses*8)
+func (m *Manager) Addresses() []*domainmessage.NetAddress {
+	addrs := make([]*domainmessage.NetAddress, 0, defaultMaxAddresses*8)
 	now := time.Now()
 	i := defaultMaxAddresses
 
@@ -205,8 +205,8 @@ func (m *Manager) AddressCount() int {
 
 // GoodAddresses returns good working IPs that match both the
 // passed DNS query type and have the requested services.
-func (m *Manager) GoodAddresses(qtype uint16, services wire.ServiceFlag, includeAllSubnetworks bool, subnetworkID *subnetworkid.SubnetworkID) []*wire.NetAddress {
-	addrs := make([]*wire.NetAddress, 0, defaultMaxAddresses)
+func (m *Manager) GoodAddresses(qtype uint16, services domainmessage.ServiceFlag, includeAllSubnetworks bool, subnetworkID *subnetworkid.SubnetworkID) []*domainmessage.NetAddress {
+	addrs := make([]*domainmessage.NetAddress, 0, defaultMaxAddresses)
 	i := defaultMaxAddresses
 
 	if qtype != dns.TypeA && qtype != dns.TypeAAAA {
@@ -262,7 +262,7 @@ func (m *Manager) Attempt(ip net.IP) {
 }
 
 // Good updates the last successful connection attempt for the specified ip address to now
-func (m *Manager) Good(ip net.IP, services wire.ServiceFlag, subnetworkid *subnetworkid.SubnetworkID) {
+func (m *Manager) Good(ip net.IP, services domainmessage.ServiceFlag, subnetworkid *subnetworkid.SubnetworkID) {
 	m.mtx.Lock()
 	node, exists := m.nodes[ip.String()]
 	if exists {

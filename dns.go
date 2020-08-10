@@ -7,6 +7,7 @@ package main
 import (
 	"fmt"
 	"github.com/kaspanet/kaspad/dnsseed"
+	"github.com/kaspanet/kaspad/domainmessage"
 	"github.com/pkg/errors"
 	"net"
 	"os"
@@ -16,7 +17,6 @@ import (
 	"time"
 
 	"github.com/kaspanet/kaspad/util/subnetworkid"
-	"github.com/kaspanet/kaspad/wire"
 	"github.com/miekg/dns"
 )
 
@@ -102,11 +102,11 @@ func NewDNSServer(hostname, nameserver, listen string) *DNSServer {
 	}
 }
 
-func (d *DNSServer) extractServicesSubnetworkID(addr *net.UDPAddr, domainName string) (wire.ServiceFlag, *subnetworkid.SubnetworkID, bool, error) {
+func (d *DNSServer) extractServicesSubnetworkID(addr *net.UDPAddr, domainName string) (domainmessage.ServiceFlag, *subnetworkid.SubnetworkID, bool, error) {
 	// Domain name may be in following format:
 	//   [n[subnetwork].][xservice.]hostname
 	// where connmgr.SubnetworkIDPrefixChar and connmgr.ServiceFlagPrefixChar are prefexes
-	wantedSF := wire.SFNodeNetwork
+	wantedSF := domainmessage.SFNodeNetwork
 	var subnetworkID *subnetworkid.SubnetworkID
 	includeAllSubnetworks := true
 	if d.hostname != domainName {
@@ -130,7 +130,7 @@ func (d *DNSServer) extractServicesSubnetworkID(addr *net.UDPAddr, domainName st
 				log.Infof("%s: ParseUint: %v", addr, err)
 				return wantedSF, subnetworkID, includeAllSubnetworks, err
 			}
-			wantedSF = wire.ServiceFlag(u)
+			wantedSF = domainmessage.ServiceFlag(u)
 		}
 	}
 	return wantedSF, subnetworkID, includeAllSubnetworks, nil
@@ -178,7 +178,7 @@ func translateDNSQuestion(addr *net.UDPAddr, dnsMsg *dns.Msg) (string, error) {
 }
 
 func (d *DNSServer) buildDNSResponse(addr *net.UDPAddr, authority dns.RR, dnsMsg *dns.Msg,
-	wantedSF wire.ServiceFlag, includeAllSubnetworks bool, subnetworkID *subnetworkid.SubnetworkID, atype string) ([]byte, error) {
+	wantedSF domainmessage.ServiceFlag, includeAllSubnetworks bool, subnetworkID *subnetworkid.SubnetworkID, atype string) ([]byte, error) {
 	respMsg := dnsMsg.Copy()
 	respMsg.Authoritative = true
 	respMsg.Response = true
