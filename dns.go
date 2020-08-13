@@ -6,8 +6,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/kaspanet/kaspad/dnsseed"
-	"github.com/kaspanet/kaspad/domainmessage"
+	"github.com/kaspanet/kaspad/network/dnsseed"
+	"github.com/kaspanet/kaspad/network/domainmessage"
 	"github.com/pkg/errors"
 	"net"
 	"os"
