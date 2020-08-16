@@ -6,10 +6,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/kaspanet/kaspad/config"
-	"github.com/kaspanet/kaspad/domainmessage"
-	"github.com/kaspanet/kaspad/netadapter/standalone"
-	"github.com/kaspanet/kaspad/protocol/common"
+	"github.com/kaspanet/kaspad/infrastructure/config"
+	"github.com/kaspanet/kaspad/infrastructure/signal"
+	"github.com/kaspanet/kaspad/network/dnsseed"
+	"github.com/kaspanet/kaspad/network/domainmessage"
+	"github.com/kaspanet/kaspad/network/netadapter/standalone"
+	"github.com/kaspanet/kaspad/network/protocol/common"
 	"net"
 	"os"
 	"strconv"
@@ -20,11 +22,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kaspanet/dnsseeder/version"
-	"github.com/kaspanet/kaspad/dnsseed"
 	"github.com/kaspanet/kaspad/util/panics"
 	"github.com/kaspanet/kaspad/util/profiling"
-
-	"github.com/kaspanet/kaspad/signal"
 
 	_ "net/http/pprof"
 )

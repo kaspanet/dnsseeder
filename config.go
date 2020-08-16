@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/kaspanet/kaspad/infrastructure/config"
 	"net"
 	"os"
 	"path/filepath"
@@ -13,7 +14,6 @@ import (
 	"strings"
 
 	"github.com/kaspanet/dnsseeder/version"
-	"github.com/kaspanet/kaspad/config"
 	"github.com/pkg/errors"
 
 	"github.com/jessevdk/go-flags"
