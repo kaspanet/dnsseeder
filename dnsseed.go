@@ -56,7 +56,7 @@ func hostLookup(host string) ([]net.IP, error) {
 func creep() {
 	defer wg.Done()
 
-	netAdapter, err := standalone.NewMinimalNetAdapter(&config.Config{Flags: &config.Flags{}})
+	netAdapter, err := standalone.NewMinimalNetAdapter(&config.Config{Flags: &config.Flags{NetworkFlags: ActiveConfig().NetworkFlags}})
 	if err != nil {
 		log.Errorf("Could not start net adapter")
 		return
