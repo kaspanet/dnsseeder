@@ -6,12 +6,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/kaspanet/kaspad/app/appmessage"
+	"github.com/kaspanet/kaspad/app/protocol/common"
 	"github.com/kaspanet/kaspad/infrastructure/config"
-	"github.com/kaspanet/kaspad/infrastructure/signal"
-	"github.com/kaspanet/kaspad/network/dnsseed"
-	"github.com/kaspanet/kaspad/network/domainmessage"
-	"github.com/kaspanet/kaspad/network/netadapter/standalone"
-	"github.com/kaspanet/kaspad/network/protocol/common"
+	"github.com/kaspanet/kaspad/infrastructure/network/dnsseed"
+	"github.com/kaspanet/kaspad/infrastructure/network/netadapter/standalone"
+	"github.com/kaspanet/kaspad/infrastructure/os/signal"
 	"net"
 	"os"
 	"strconv"
@@ -31,7 +31,7 @@ import (
 const (
 	// requiredServices describes the default services that are
 	// required to be supported by outbound peers.
-	requiredServices = domainmessage.SFNodeNetwork
+	requiredServices = appmessage.SFNodeNetwork
 )
 
 var (
@@ -39,7 +39,7 @@ var (
 	wg               sync.WaitGroup
 	peersDefaultPort int
 	systemShutdown   int32
-	defaultSeeder    *domainmessage.NetAddress
+	defaultSeeder    *appmessage.NetAddress
 )
 
 // hostLookup returns the correct DNS lookup function to use depending on the
@@ -68,7 +68,7 @@ func creep() {
 		if len(peers) == 0 && amgr.AddressCount() == 0 {
 			// Add peers discovered through DNS to the address manager.
 			dnsseed.SeedFromDNS(ActiveConfig().NetParams(), "", requiredServices, true,
-				nil, hostLookup, func(addrs []*domainmessage.NetAddress) {
+				nil, hostLookup, func(addrs []*appmessage.NetAddress) {
 					amgr.AddAddresses(addrs)
 				})
 			peers = amgr.Addresses()
@@ -93,7 +93,7 @@ func creep() {
 				return
 			}
 			wgCreep.Add(1)
-			go func(addr *domainmessage.NetAddress) {
+			go func(addr *appmessage.NetAddress) {
 				defer wgCreep.Done()
 
 				err := pollPeer(netAdapter, addr)
@@ -109,7 +109,7 @@ func creep() {
 	}
 }
 
-func pollPeer(netAdapter *standalone.MinimalNetAdapter, addr *domainmessage.NetAddress) error {
+func pollPeer(netAdapter *standalone.MinimalNetAdapter, addr *appmessage.NetAddress) error {
 	peerAddress := net.JoinHostPort(addr.IP.String(), strconv.Itoa(int(addr.Port)))
 
 	routes, err := netAdapter.Connect(peerAddress)
@@ -118,17 +118,17 @@ func pollPeer(netAdapter *standalone.MinimalNetAdapter, addr *domainmessage.NetA
 	}
 	defer routes.Disconnect()
 
-	msgRequestAddresses := domainmessage.NewMsgRequestAddresses(true, nil)
+	msgRequestAddresses := appmessage.NewMsgRequestAddresses(true, nil)
 	err = routes.OutgoingRoute.Enqueue(msgRequestAddresses)
 	if err != nil {
 		return errors.Wrapf(err, "failed to request addresses from %s", peerAddress)
 	}
 
-	message, err := routes.WaitForMessageOfType(domainmessage.CmdAddresses, common.DefaultTimeout)
+	message, err := routes.WaitForMessageOfType(appmessage.CmdAddresses, common.DefaultTimeout)
 	if err != nil {
 		return errors.Wrapf(err, "failed to receive addresses from %s", peerAddress)
 	}
-	msgAddresses := message.(*domainmessage.MsgAddresses)
+	msgAddresses := message.(*appmessage.MsgAddresses)
 
 	added := amgr.AddAddresses(msgAddresses.AddrList)
 	log.Infof("Peer %s sent %d addresses, %d new",
@@ -184,8 +184,8 @@ func main() {
 			}
 		}
 		if ip != nil {
-			defaultSeeder = domainmessage.NewNetAddressIPPort(ip, uint16(peersDefaultPort), requiredServices)
-			amgr.AddAddresses([]*domainmessage.NetAddress{defaultSeeder})
+			defaultSeeder = appmessage.NewNetAddressIPPort(ip, uint16(peersDefaultPort), requiredServices)
+			amgr.AddAddresses([]*appmessage.NetAddress{defaultSeeder})
 		}
 	}
 
