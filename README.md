@@ -80,4 +80,3 @@ NAME                        TYPE        VALUE
 [your.domain.name]          A           [your ip address]
 [ns-your.domain.name]       NS          [your.domain.name]
 ```
-
