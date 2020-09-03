@@ -6,12 +6,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/kaspanet/kaspad/app/appmessage"
-	"github.com/kaspanet/kaspad/app/protocol/common"
-	"github.com/kaspanet/kaspad/infrastructure/config"
-	"github.com/kaspanet/kaspad/infrastructure/network/dnsseed"
-	"github.com/kaspanet/kaspad/infrastructure/network/netadapter/standalone"
-	"github.com/kaspanet/kaspad/infrastructure/os/signal"
 	"net"
 	"os"
 	"strconv"
@@ -20,11 +14,19 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/kaspanet/kaspad/app/protocol/common"
+	"github.com/kaspanet/kaspad/infrastructure/config"
+	"github.com/kaspanet/kaspad/infrastructure/network/netadapter/standalone"
+
 	"github.com/pkg/errors"
 
 	"github.com/kaspanet/dnsseeder/version"
+	"github.com/kaspanet/kaspad/infrastructure/network/dnsseed"
 	"github.com/kaspanet/kaspad/util/panics"
 	"github.com/kaspanet/kaspad/util/profiling"
+
+	"github.com/kaspanet/kaspad/app/appmessage"
+	"github.com/kaspanet/kaspad/infrastructure/os/signal"
 
 	_ "net/http/pprof"
 )
@@ -63,7 +65,7 @@ func creep() {
 		return
 	}
 
-	var knownPeers []*wire.NetAddress
+	var knownPeers []*appmessage.NetAddress
 
 	if len(ActiveConfig().KnownPeers) != 0 {
 
@@ -85,7 +87,7 @@ func creep() {
 				return
 			}
 
-			knownPeers = append(knownPeers, wire.NewNetAddressIPPort(ip, uint16(port), requiredServices))
+			knownPeers = append(knownPeers, appmessage.NewNetAddressIPPort(ip, uint16(port), requiredServices))
 		}
 
 		amgr.AddAddresses(knownPeers)

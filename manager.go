@@ -6,14 +6,15 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/kaspanet/kaspad/app/appmessage"
-	"github.com/pkg/errors"
 	"net"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+
+	"github.com/kaspanet/kaspad/app/appmessage"
 	"github.com/kaspanet/kaspad/util/subnetworkid"
 	"github.com/miekg/dns"
 )
@@ -205,7 +206,8 @@ func (m *Manager) AddressCount() int {
 
 // GoodAddresses returns good working IPs that match both the
 // passed DNS query type and have the requested services.
-func (m *Manager) GoodAddresses(qtype uint16, services appmessage.ServiceFlag, includeAllSubnetworks bool, subnetworkID *subnetworkid.SubnetworkID) []*appmessage.NetAddress {
+func (m *Manager) GoodAddresses(qtype uint16, services appmessage.ServiceFlag, includeAllSubnetworks bool,
+	subnetworkID *subnetworkid.SubnetworkID) []*appmessage.NetAddress {
 	addrs := make([]*appmessage.NetAddress, 0, defaultMaxAddresses)
 	i := defaultMaxAddresses
 

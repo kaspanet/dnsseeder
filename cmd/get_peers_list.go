@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/kaspanet/kaspad/rpc/client"
 	"strings"
+
+	"github.com/kaspanet/kaspad/infrastructure/network/rpc/client"
 )
 
 func main() {

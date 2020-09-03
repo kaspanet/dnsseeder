@@ -3,13 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
-		pb2 "github.com/kaspanet/kaspad/dnsseed/pb"
-"github.com/kaspanet/kaspad/util/subnetworkid"
-	"github.com/kaspanet/kaspad/wire"
+	"net"
+
+	"github.com/kaspanet/kaspad/app/appmessage"
+	"github.com/kaspanet/kaspad/infrastructure/network/dnsseed/pb"
+	"github.com/kaspanet/kaspad/util/subnetworkid"
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
-	"net"
 )
 
 type GRPCServer interface {
@@ -18,19 +19,19 @@ type GRPCServer interface {
 }
 
 type grpcServer struct {
-	pb2.UnimplementedPeerServiceServer
+	pb.UnimplementedPeerServiceServer
 
 	server *grpc.Server
-	amgr *Manager
+	amgr   *Manager
 }
 
 func NewGRPCServer(amgr *Manager) GRPCServer {
-	return &grpcServer{ amgr: amgr }
+	return &grpcServer{amgr: amgr}
 }
 
 func (s *grpcServer) Start(listenInterface string) error {
 	s.server = grpc.NewServer()
-	pb2.RegisterPeerServiceServer(s.server, s)
+	pb.RegisterPeerServiceServer(s.server, s)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(listenInterface))
 	if err != nil {
@@ -44,7 +45,6 @@ func (s *grpcServer) Start(listenInterface string) error {
 		}
 	})
 
-
 	return nil
 }
 
@@ -53,7 +53,7 @@ func (s *grpcServer) Stop() {
 	s.server = nil
 }
 
-func (s *grpcServer) GetPeersList(ctx context.Context, req *pb2.GetPeersListRequest) (*pb2.GetPeersListResponse, error) {
+func (s *grpcServer) GetPeersList(ctx context.Context, req *pb.GetPeersListRequest) (*pb.GetPeersListResponse, error) {
 
 	subnetworkID, err := FromProtobufSubnetworkID(req.SubnetworkID)
 
@@ -62,13 +62,13 @@ func (s *grpcServer) GetPeersList(ctx context.Context, req *pb2.GetPeersListRequ
 	}
 
 	// mb, we should move DNS-related logic out of manager?
-	ipv4Addresses := s.amgr.GoodAddresses(dns.TypeA, wire.ServiceFlag(req.ServiceFlag), req.IncludeAllSubnetworks, subnetworkID)
-	ipv6Addresses := s.amgr.GoodAddresses(dns.TypeAAAA, wire.ServiceFlag(req.ServiceFlag), req.IncludeAllSubnetworks, subnetworkID)
+	ipv4Addresses := s.amgr.GoodAddresses(dns.TypeA, appmessage.ServiceFlag(req.ServiceFlag), req.IncludeAllSubnetworks, subnetworkID)
+	ipv6Addresses := s.amgr.GoodAddresses(dns.TypeAAAA, appmessage.ServiceFlag(req.ServiceFlag), req.IncludeAllSubnetworks, subnetworkID)
 
 	addresses := ToProtobufAddresses(append(ipv4Addresses, ipv6Addresses...))
-	log.Error("ADDRESSES: %+v", addresses)
+	log.Errorf("ADDRESSES: %+v", addresses)
 
-	return &pb2.GetPeersListResponse{ Addresses: addresses}, nil
+	return &pb.GetPeersListResponse{Addresses: addresses}, nil
 }
 
 func FromProtobufSubnetworkID(proto []byte) (*subnetworkid.SubnetworkID, error) {
@@ -84,15 +84,15 @@ func FromProtobufSubnetworkID(proto []byte) (*subnetworkid.SubnetworkID, error) 
 	return subnetworkID, nil
 }
 
-func ToProtobufAddresses(addresses []*wire.NetAddress) []*pb2.NetAddress {
-	var protoAddresses []*pb2.NetAddress
+func ToProtobufAddresses(addresses []*appmessage.NetAddress) []*pb.NetAddress {
+	var protoAddresses []*pb.NetAddress
 
 	for _, addr := range addresses {
-		proto := &pb2.NetAddress{
+		proto := &pb.NetAddress{
 			Timestamp: addr.Timestamp.UnixSeconds(),
-			Services: uint64(addr.Services),
-			IP: []byte(addr.IP),
-			Port: uint32(addr.Port),
+			Services:  uint64(addr.Services),
+			IP:        []byte(addr.IP),
+			Port:      uint32(addr.Port),
 		}
 		protoAddresses = append(protoAddresses, proto)
 	}

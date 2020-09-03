@@ -3,13 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
-		pb2 "github.com/kaspanet/kaspad/dnsseed/pb"
-"github.com/kaspanet/kaspad/util/subnetworkid"
-	"github.com/kaspanet/kaspad/wire"
-	"google.golang.org/grpc"
 	"net"
 	"os"
 	"testing"
+
+	"github.com/kaspanet/kaspad/app/appmessage"
+	"github.com/kaspanet/kaspad/infrastructure/network/dnsseed/pb"
+	"github.com/kaspanet/kaspad/util/subnetworkid"
+	"google.golang.org/grpc"
 )
 
 func TestGetPeers(t *testing.T) {
@@ -22,36 +23,25 @@ func TestGetPeers(t *testing.T) {
 		os.Exit(1)
 	}
 
-	amgr.Good(net.IP([]byte{ 203, 105, 20, 21}), wire.SFNodeNetwork, &subnetworkid.SubnetworkID{})
+	amgr.Good(net.IP([]byte{203, 105, 20, 21}), appmessage.SFNodeNetwork, &subnetworkid.SubnetworkID{})
 
+	host := "localhost:3737"
 	grpcServer := NewGRPCServer(amgr)
-	err = grpcServer.Start(3737)
+	err = grpcServer.Start(host)
 
 	if err != nil {
 		t.Fatal("Failed to start gRPC server")
 	}
 
-	//defer func() {
-	//	log.Infof("Gracefully shutting down the seeder...")
-	//	atomic.StoreInt32(&systemShutdown, 1)
-	//	close(amgr.quit)
-	//	wg.Wait()
-	//	amgr.wg.Wait()
-	//	log.Infof("Seeder shutdown complete")
-	//}()
-
-
-	host := "localhost:3737"
-	var subnetworkID *subnetworkid.SubnetworkID = &subnetworkid.SubnetworkID{}
-
+	var subnetworkID = &subnetworkid.SubnetworkID{}
 	conn, err := grpc.Dial(host, grpc.WithInsecure())
-	client := pb2.NewPeerServiceClient(conn)
-	serviceFlag := wire.SFNodeNetwork
-	includeAllSubnetworks := false
 	if err != nil {
 		t.Logf("Failed to connect to gRPC server: %s", host)
 	}
 
+	client := pb.NewPeerServiceClient(conn)
+	serviceFlag := appmessage.SFNodeNetwork
+	includeAllSubnetworks := false
 	var subnetID []byte
 	if subnetworkID != nil {
 		subnetID = subnetworkID.CloneBytes()
@@ -59,14 +49,13 @@ func TestGetPeers(t *testing.T) {
 		subnetID = nil
 	}
 
-	req := &pb2.GetPeersListRequest{
-		ServiceFlag: uint64(serviceFlag),
-		SubnetworkID: subnetID,
+	req := &pb.GetPeersListRequest{
+		ServiceFlag:           uint64(serviceFlag),
+		SubnetworkID:          subnetID,
 		IncludeAllSubnetworks: includeAllSubnetworks,
 	}
 	t.Error()
 	res, err := client.GetPeersList(context.Background(), req)
-
 
 	if err != nil {
 		t.Errorf("gRPC request to get peers failed (host=%s): %s", host, err)
@@ -83,16 +72,15 @@ func TestGetPeers(t *testing.T) {
 		t.Error("No peers")
 	}
 
-	t.Logf("finally")
+	t.Logf("TestGetPeers completed")
 	grpcServer.Stop()
 }
 
-func fromProtobufAddresses(proto []*pb2.NetAddress) []net.IP {
+func fromProtobufAddresses(proto []*pb.NetAddress) []net.IP {
 	var addresses []net.IP
 
-
 	for _, pbAddr := range proto {
-		addresses = append(addresses, net.IP(pbAddr.IP))
+		addresses = append(addresses, pbAddr.IP)
 	}
 
 	return addresses
