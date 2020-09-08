@@ -6,9 +6,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/kaspanet/kaspad/app/appmessage"
-	"github.com/kaspanet/kaspad/infrastructure/network/dnsseed"
-	"github.com/pkg/errors"
 	"net"
 	"os"
 	"strconv"
@@ -16,6 +13,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/kaspanet/kaspad/infrastructure/network/dnsseed"
+	"github.com/pkg/errors"
+
+	"github.com/kaspanet/kaspad/app/appmessage"
 	"github.com/kaspanet/kaspad/util/subnetworkid"
 	"github.com/miekg/dns"
 )

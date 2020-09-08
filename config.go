@@ -6,12 +6,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/kaspanet/kaspad/infrastructure/config"
 	"net"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/kaspanet/kaspad/infrastructure/config"
 
 	"github.com/kaspanet/dnsseeder/version"
 	"github.com/pkg/errors"
@@ -25,6 +26,7 @@ const (
 	defaultLogFilename    = "dnsseeder.log"
 	defaultErrLogFilename = "dnsseeder_err.log"
 	defaultListenPort     = "5354"
+	defaultGrpcListenPort = "3737"
 )
 
 var (
@@ -44,12 +46,14 @@ func ActiveConfig() *ConfigFlags {
 
 // ConfigFlags holds the configurations set by the command line argument
 type ConfigFlags struct {
+	KnownPeers  string `short:"p" long:"peers" description:"List of already known peer addresses"`
 	ShowVersion bool   `short:"V" long:"version" description:"Display version information and exit"`
 	Host        string `short:"H" long:"host" description:"Seed DNS address"`
 	Listen      string `long:"listen" short:"l" description:"Listen on address:port"`
 	Nameserver  string `short:"n" long:"nameserver" description:"hostname of nameserver"`
 	Seeder      string `short:"s" long:"default-seeder" description:"IP address of a  working node"`
 	Profile     string `long:"profile" description:"Enable HTTP profiling on given port -- NOTE port must be between 1024 and 65536"`
+	GRPCListen  string `long:"grpclisten" description:"Listen gRPC requests on address:port"`
 	config.NetworkFlags
 }
 
@@ -75,7 +79,8 @@ func loadConfig() (*ConfigFlags, error) {
 
 	// Default config.
 	activeConfig = &ConfigFlags{
-		Listen: normalizeAddress("localhost", defaultListenPort),
+		Listen:     normalizeAddress("localhost", defaultListenPort),
+		GRPCListen: normalizeAddress("localhost", defaultGrpcListenPort),
 	}
 
 	preCfg := activeConfig

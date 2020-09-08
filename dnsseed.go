@@ -6,24 +6,27 @@ package main
 
 import (
 	"fmt"
-	"github.com/kaspanet/kaspad/app/appmessage"
-	"github.com/kaspanet/kaspad/app/protocol/common"
-	"github.com/kaspanet/kaspad/infrastructure/config"
-	"github.com/kaspanet/kaspad/infrastructure/network/dnsseed"
-	"github.com/kaspanet/kaspad/infrastructure/network/netadapter/standalone"
-	"github.com/kaspanet/kaspad/infrastructure/os/signal"
 	"net"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/kaspanet/kaspad/app/protocol/common"
+	"github.com/kaspanet/kaspad/infrastructure/config"
+	"github.com/kaspanet/kaspad/infrastructure/network/netadapter/standalone"
+
 	"github.com/pkg/errors"
 
 	"github.com/kaspanet/dnsseeder/version"
+	"github.com/kaspanet/kaspad/infrastructure/network/dnsseed"
 	"github.com/kaspanet/kaspad/util/panics"
 	"github.com/kaspanet/kaspad/util/profiling"
+
+	"github.com/kaspanet/kaspad/app/appmessage"
+	"github.com/kaspanet/kaspad/infrastructure/os/signal"
 
 	_ "net/http/pprof"
 )
@@ -60,6 +63,38 @@ func creep() {
 	if err != nil {
 		log.Errorf("Could not start net adapter")
 		return
+	}
+
+	var knownPeers []*appmessage.NetAddress
+
+	if len(ActiveConfig().KnownPeers) != 0 {
+
+		for _, p := range strings.Split(ActiveConfig().KnownPeers, ",") {
+			addressStr := strings.Split(p, ":")
+			if len(addressStr) != 2 {
+				log.Errorf("Invalid peer address: %s; addresses should be in format \"IP\":\"port\"", p)
+				return
+			}
+
+			ip := net.ParseIP(addressStr[0])
+			if ip == nil {
+				log.Errorf("Invalid peer IP address: %s", addressStr[0])
+				return
+			}
+			port, err := strconv.Atoi(addressStr[1])
+			if err != nil {
+				log.Errorf("Invalid peer port: %s", addressStr[1])
+				return
+			}
+
+			knownPeers = append(knownPeers, appmessage.NewNetAddressIPPort(ip, uint16(port), requiredServices))
+		}
+
+		amgr.AddAddresses(knownPeers)
+		for _, peer := range knownPeers {
+			amgr.Good(peer.IP, peer.Services, nil)
+			amgr.Attempt(peer.IP)
+		}
 	}
 
 	var wgCreep sync.WaitGroup
@@ -195,6 +230,13 @@ func main() {
 	dnsServer := NewDNSServer(cfg.Host, cfg.Nameserver, cfg.Listen)
 	wg.Add(1)
 	spawn("main-DNSServer.Start", dnsServer.Start)
+
+	grpcServer := NewGRPCServer(amgr)
+	err = grpcServer.Start(cfg.GRPCListen)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to start gRPC server")
+		return
+	}
 
 	defer func() {
 		log.Infof("Gracefully shutting down the seeder...")
