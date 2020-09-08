@@ -24,9 +24,11 @@ KASPAD1_PID=$!
 cd -
 sleep 1
 
+cd ../
 go build
 ./dnsseeder -n test.com -H test.com -s 127.0.0.1 --devnet -p "127.0.0.1:16621" &
 SEEDER_PID=$!
+cd -
 sleep 3
 
 cd $KASPAD_DIR
@@ -35,7 +37,7 @@ KASPAD2_PID=$!
 cd -
 sleep 2
 
-RESULT=$(go run cmd/get_peers_list.go)
+RESULT=$(go run get_peers_list.go)
 EXPECTED="127.0.0.1:16621,127.0.0.1:16611"
 
 sleep 2
