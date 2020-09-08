@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc"
 )
 
+// GRPCServer contains methods to start and stop GRPC server
 type GRPCServer interface {
 	Start(listenInterface string) error
 	Stop()
@@ -25,6 +26,7 @@ type grpcServer struct {
 	amgr   *Manager
 }
 
+// NewGRPCServer returns new GRPC server
 func NewGRPCServer(amgr *Manager) GRPCServer {
 	return &grpcServer{amgr: amgr}
 }
@@ -71,6 +73,7 @@ func (s *grpcServer) GetPeersList(ctx context.Context, req *pb.GetPeersListReque
 	return &pb.GetPeersListResponse{Addresses: addresses}, nil
 }
 
+// FromProtobufSubnetworkID returns new *subnetworkid.SubnetworkID from proto
 func FromProtobufSubnetworkID(proto []byte) (*subnetworkid.SubnetworkID, error) {
 	if len(proto) == 0 {
 		return nil, nil
@@ -84,6 +87,7 @@ func FromProtobufSubnetworkID(proto []byte) (*subnetworkid.SubnetworkID, error) 
 	return subnetworkID, nil
 }
 
+// ToProtobufAddresses converts slice of *appmessage.NetAddress to slice of *pb.NetAddress
 func ToProtobufAddresses(addresses []*appmessage.NetAddress) []*pb.NetAddress {
 	var protoAddresses []*pb.NetAddress
 
