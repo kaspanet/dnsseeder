@@ -19,7 +19,7 @@ fi
 cd $KASPAD_DIR
 git checkout $BRANCH
 go build
-./kaspad --datadir=$TESTDATA/kaspad1 --allowlocalpeers --notls --rpcuser=test --rpcpass=test --listen=127.0.0.1:16621 --rpclisten=127.0.0.1:16620 --devnet --grpcseed=127.0.0.1:3737 &
+./kaspad --datadir=$TESTDATA/kaspad1 --notls --rpcuser=test --rpcpass=test --listen=127.0.0.1:16621 --rpclisten=127.0.0.1:16620 --devnet --grpcseed=127.0.0.1:3737 &
 KASPAD1_PID=$!
 cd -
 sleep 1
@@ -32,7 +32,7 @@ cd -
 sleep 3
 
 cd $KASPAD_DIR
-./kaspad --datadir=$TESTDATA/kaspad2 --allowlocalpeers --notls --rpcuser=test --rpcpass=test --listen=127.0.0.1:16631 --rpclisten=127.0.0.1:16630 --devnet --grpcseed=127.0.0.1:3737 &
+./kaspad --datadir=$TESTDATA/kaspad2 --notls --rpcuser=test --rpcpass=test --listen=127.0.0.1:16631 --rpclisten=127.0.0.1:16630 --devnet --grpcseed=127.0.0.1:3737 &
 KASPAD2_PID=$!
 cd -
 sleep 2
