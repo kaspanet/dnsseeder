@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/kaspanet/kaspad/infrastructure/config"
 	"net"
 	"os"
 	"testing"
@@ -14,16 +15,27 @@ import (
 )
 
 func TestGetPeers(t *testing.T) {
+	activeConfig = &ConfigFlags{
+		NetworkFlags: config.NetworkFlags{Devnet: true},
+	}
+
+	err := activeConfig.NetworkFlags.ResolveNetwork(nil)
+	if err != nil {
+		t.Fatalf("ResolveNetwork: %s", err)
+	}
+
 	peersDefaultPort = 1313
 
-	var err error
 	amgr, err = NewManager(defaultHomeDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "NewManager: %v\n", err)
 		os.Exit(1)
 	}
 
-	amgr.Good(net.IP([]byte{203, 105, 20, 21}), appmessage.SFNodeNetwork, &subnetworkid.SubnetworkID{})
+	ip := net.IP([]byte{203, 105, 20, 21})
+	netAddress := appmessage.NewNetAddressIPPort(ip, uint16(peersDefaultPort), requiredServices)
+	amgr.AddAddresses([]*appmessage.NetAddress{netAddress})
+	amgr.Good(ip, appmessage.SFNodeNetwork, nil)
 
 	host := "localhost:3737"
 	grpcServer := NewGRPCServer(amgr)
@@ -33,7 +45,7 @@ func TestGetPeers(t *testing.T) {
 		t.Fatal("Failed to start gRPC server")
 	}
 
-	var subnetworkID = &subnetworkid.SubnetworkID{}
+	var subnetworkID *subnetworkid.SubnetworkID
 	conn, err := grpc.Dial(host, grpc.WithInsecure())
 	if err != nil {
 		t.Logf("Failed to connect to gRPC server: %s", host)
@@ -54,7 +66,6 @@ func TestGetPeers(t *testing.T) {
 		SubnetworkID:          subnetID,
 		IncludeAllSubnetworks: includeAllSubnetworks,
 	}
-	t.Error()
 	res, err := client.GetPeersList(context.Background(), req)
 
 	if err != nil {
