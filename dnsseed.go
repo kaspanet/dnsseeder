@@ -5,6 +5,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"os"
@@ -56,6 +57,48 @@ func hostLookup(host string) ([]net.IP, error) {
 	return net.LookupIP(host)
 }
 
+// getPeerAddresses returns raw addresses obtained from file, that was
+// specified by command line argument or directly from command line argument
+func getPeerAddresses() []string {
+	peerAddresses := make([]string, 0)
+
+	if len(ActiveConfig().KnownPeers) != 0 {
+		peerAddresses = strings.Split(ActiveConfig().KnownPeers, ",")
+	} else if len(ActiveConfig().KnownPeersFile) != 0 {
+		peersFile := ActiveConfig().KnownPeersFile
+		info, err := os.Stat(peersFile)
+		switch {
+		case os.IsNotExist(err):
+			log.Errorf("%s does not exist", peersFile)
+			return nil
+		case err != nil:
+			log.Error(err)
+			return nil
+		case info.IsDir():
+			log.Errorf("%s is a directory, not a file", peersFile)
+			return nil
+		}
+
+		file, err := os.Open(peersFile)
+		if err != nil {
+			log.Error(err)
+			return nil
+		}
+
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			address := scanner.Text()
+			if len(address) > 0 {
+				peerAddresses = append(peerAddresses, address)
+			}
+		}
+	}
+
+	return peerAddresses
+}
+
 func creep() {
 	defer wg.Done()
 
@@ -66,10 +109,10 @@ func creep() {
 	}
 
 	var knownPeers []*appmessage.NetAddress
+	peerAddresses := getPeerAddresses()
 
-	if len(ActiveConfig().KnownPeers) != 0 {
-
-		for _, p := range strings.Split(ActiveConfig().KnownPeers, ",") {
+	if len(peerAddresses) > 0 {
+		for _, p := range peerAddresses {
 			addressStr := strings.Split(p, ":")
 			if len(addressStr) != 2 {
 				log.Errorf("Invalid peer address: %s; addresses should be in format \"IP\":\"port\"", p)

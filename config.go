@@ -46,14 +46,15 @@ func ActiveConfig() *ConfigFlags {
 
 // ConfigFlags holds the configurations set by the command line argument
 type ConfigFlags struct {
-	KnownPeers  string `short:"p" long:"peers" description:"List of already known peer addresses"`
-	ShowVersion bool   `short:"V" long:"version" description:"Display version information and exit"`
-	Host        string `short:"H" long:"host" description:"Seed DNS address"`
-	Listen      string `long:"listen" short:"l" description:"Listen on address:port"`
-	Nameserver  string `short:"n" long:"nameserver" description:"hostname of nameserver"`
-	Seeder      string `short:"s" long:"default-seeder" description:"IP address of a  working node"`
-	Profile     string `long:"profile" description:"Enable HTTP profiling on given port -- NOTE port must be between 1024 and 65536"`
-	GRPCListen  string `long:"grpclisten" description:"Listen gRPC requests on address:port"`
+	KnownPeers     string `short:"p" long:"peers" description:"List of already known peer addresses"`
+	KnownPeersFile string `short:"f" long:"peers-file" description:"Path to file with already known peer addresses -- NOTE addresses should be written line by line"`
+	ShowVersion    bool   `short:"V" long:"version" description:"Display version information and exit"`
+	Host           string `short:"H" long:"host" description:"Seed DNS address"`
+	Listen         string `short:"l" long:"listen" description:"Listen on address:port"`
+	Nameserver     string `short:"n" long:"nameserver" description:"hostname of nameserver"`
+	Seeder         string `short:"s" long:"default-seeder" description:"IP address of a  working node"`
+	Profile        string `long:"profile" description:"Enable HTTP profiling on given port -- NOTE port must be between 1024 and 65536"`
+	GRPCListen     string `long:"grpclisten" description:"Listen gRPC requests on address:port"`
 	config.NetworkFlags
 }
 
@@ -136,6 +137,13 @@ func loadConfig() (*ConfigFlags, error) {
 
 	if len(activeConfig.Nameserver) == 0 {
 		str := "Please specify a nameserver"
+		err := errors.Errorf(str)
+		fmt.Fprintln(os.Stderr, err)
+		return nil, err
+	}
+
+	if len(activeConfig.KnownPeers) != 0 && len(activeConfig.KnownPeersFile) != 0 {
+		str := "Please specify known peers or path to file with known peers, but not both"
 		err := errors.Errorf(str)
 		fmt.Fprintln(os.Stderr, err)
 		return nil, err
