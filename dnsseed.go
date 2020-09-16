@@ -61,8 +61,7 @@ func creep() {
 
 	netAdapter, err := standalone.NewMinimalNetAdapter(&config.Config{Flags: &config.Flags{NetworkFlags: ActiveConfig().NetworkFlags}})
 	if err != nil {
-		log.Errorf("Could not start net adapter")
-		return
+		panic(errors.Wrap(err, "Could not start net adapter"))
 	}
 
 	var knownPeers []*appmessage.NetAddress
