@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/kaspanet/kaspad/domain/consensus/model/externalapi"
+	"github.com/kaspanet/kaspad/domain/consensus/utils/subnetworks"
 	"net"
 
 	"github.com/kaspanet/kaspad/app/appmessage"
 	"github.com/kaspanet/kaspad/infrastructure/network/dnsseed/pb"
-	"github.com/kaspanet/kaspad/util/subnetworkid"
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -73,13 +74,13 @@ func (s *grpcServer) GetPeersList(ctx context.Context, req *pb.GetPeersListReque
 	return &pb.GetPeersListResponse{Addresses: addresses}, nil
 }
 
-// FromProtobufSubnetworkID returns new *subnetworkid.SubnetworkID from proto
-func FromProtobufSubnetworkID(proto []byte) (*subnetworkid.SubnetworkID, error) {
+// FromProtobufSubnetworkID returns new *externalapi.DomainSubnetworkID from proto
+func FromProtobufSubnetworkID(proto []byte) (*externalapi.DomainSubnetworkID, error) {
 	if len(proto) == 0 {
 		return nil, nil
 	}
 
-	subnetworkID, err := subnetworkid.New(proto)
+	subnetworkID, err := subnetworks.FromBytes(proto)
 	if err != nil {
 		return nil, err
 	}

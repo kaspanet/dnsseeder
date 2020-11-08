@@ -6,6 +6,8 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/kaspanet/kaspad/domain/consensus/model/externalapi"
+	"github.com/kaspanet/kaspad/domain/consensus/utils/subnetworks"
 	"net"
 	"os"
 	"path/filepath"
@@ -15,7 +17,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kaspanet/kaspad/app/appmessage"
-	"github.com/kaspanet/kaspad/util/subnetworkid"
 	"github.com/miekg/dns"
 )
 
@@ -26,7 +27,7 @@ type Node struct {
 	LastAttempt  time.Time
 	LastSuccess  time.Time
 	LastSeen     time.Time
-	SubnetworkID *subnetworkid.SubnetworkID
+	SubnetworkID *externalapi.DomainSubnetworkID
 }
 
 // Manager is dnsseeder's main worker-type, storing all information required
@@ -207,7 +208,7 @@ func (m *Manager) AddressCount() int {
 // GoodAddresses returns good working IPs that match both the
 // passed DNS query type and have the requested services.
 func (m *Manager) GoodAddresses(qtype uint16, services appmessage.ServiceFlag, includeAllSubnetworks bool,
-	subnetworkID *subnetworkid.SubnetworkID) []*appmessage.NetAddress {
+	subnetworkID *externalapi.DomainSubnetworkID) []*appmessage.NetAddress {
 	addrs := make([]*appmessage.NetAddress, 0, defaultMaxAddresses)
 	i := defaultMaxAddresses
 
@@ -226,7 +227,7 @@ func (m *Manager) GoodAddresses(qtype uint16, services appmessage.ServiceFlag, i
 			continue
 		}
 
-		if !includeAllSubnetworks && !node.SubnetworkID.IsEqual(subnetworkID) {
+		if !includeAllSubnetworks && !subnetworks.IsEqual(node.SubnetworkID, subnetworkID) {
 			continue
 		}
 
@@ -264,7 +265,7 @@ func (m *Manager) Attempt(ip net.IP) {
 }
 
 // Good updates the last successful connection attempt for the specified ip address to now
-func (m *Manager) Good(ip net.IP, services appmessage.ServiceFlag, subnetworkid *subnetworkid.SubnetworkID) {
+func (m *Manager) Good(ip net.IP, services appmessage.ServiceFlag, subnetworkid *externalapi.DomainSubnetworkID) {
 	m.mtx.Lock()
 	node, exists := m.nodes[ip.String()]
 	if exists {
