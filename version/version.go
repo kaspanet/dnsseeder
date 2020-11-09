@@ -10,8 +10,8 @@ const validCharacters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrs
 
 const (
 	appMajor uint = 0
-	appMinor uint = 7
-	appPatch uint = 3
+	appMinor uint = 8
+	appPatch uint = 1
 )
 
 // appBuild is defined as a variable so it can be overridden during the build
