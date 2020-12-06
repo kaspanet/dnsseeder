@@ -6,6 +6,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/kaspanet/kaspad/domain/consensus/model/externalapi"
+	"github.com/kaspanet/kaspad/domain/consensus/utils/subnetworks"
 	"net"
 	"os"
 	"strconv"
@@ -17,7 +19,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kaspanet/kaspad/app/appmessage"
-	"github.com/kaspanet/kaspad/util/subnetworkid"
 	"github.com/miekg/dns"
 )
 
@@ -103,12 +104,12 @@ func NewDNSServer(hostname, nameserver, listen string) *DNSServer {
 	}
 }
 
-func (d *DNSServer) extractServicesSubnetworkID(addr *net.UDPAddr, domainName string) (appmessage.ServiceFlag, *subnetworkid.SubnetworkID, bool, error) {
+func (d *DNSServer) extractServicesSubnetworkID(addr *net.UDPAddr, domainName string) (appmessage.ServiceFlag, *externalapi.DomainSubnetworkID, bool, error) {
 	// Domain name may be in following format:
 	//   [n[subnetwork].][xservice.]hostname
 	// where connmgr.SubnetworkIDPrefixChar and connmgr.ServiceFlagPrefixChar are prefexes
 	wantedSF := appmessage.SFNodeNetwork
-	var subnetworkID *subnetworkid.SubnetworkID
+	var subnetworkID *externalapi.DomainSubnetworkID
 	includeAllSubnetworks := true
 	if d.hostname != domainName {
 		idx := 0
@@ -117,7 +118,7 @@ func (d *DNSServer) extractServicesSubnetworkID(addr *net.UDPAddr, domainName st
 			includeAllSubnetworks = false
 			if len(labels[0]) > 1 {
 				idx = 1
-				subnetworkID, err := subnetworkid.NewFromStr(labels[0][1:])
+				subnetworkID, err := subnetworks.FromString(labels[0][1:])
 				if err != nil {
 					log.Infof("%s: subnetworkid.NewFromStr: %v", addr, err)
 					return wantedSF, subnetworkID, includeAllSubnetworks, err
@@ -179,7 +180,7 @@ func translateDNSQuestion(addr *net.UDPAddr, dnsMsg *dns.Msg) (string, error) {
 }
 
 func (d *DNSServer) buildDNSResponse(addr *net.UDPAddr, authority dns.RR, dnsMsg *dns.Msg,
-	wantedSF appmessage.ServiceFlag, includeAllSubnetworks bool, subnetworkID *subnetworkid.SubnetworkID, atype string) ([]byte, error) {
+	wantedSF appmessage.ServiceFlag, includeAllSubnetworks bool, subnetworkID *externalapi.DomainSubnetworkID, atype string) ([]byte, error) {
 	respMsg := dnsMsg.Copy()
 	respMsg.Authoritative = true
 	respMsg.Response = true

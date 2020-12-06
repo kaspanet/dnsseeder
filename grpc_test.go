@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/kaspanet/kaspad/domain/consensus/model/externalapi"
 	"github.com/kaspanet/kaspad/infrastructure/config"
 	"net"
 	"os"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/kaspanet/kaspad/app/appmessage"
 	"github.com/kaspanet/kaspad/infrastructure/network/dnsseed/pb"
-	"github.com/kaspanet/kaspad/util/subnetworkid"
 	"google.golang.org/grpc"
 )
 
@@ -45,7 +45,7 @@ func TestGetPeers(t *testing.T) {
 		t.Fatal("Failed to start gRPC server")
 	}
 
-	var subnetworkID *subnetworkid.SubnetworkID
+	var subnetworkID *externalapi.DomainSubnetworkID
 	conn, err := grpc.Dial(host, grpc.WithInsecure())
 	if err != nil {
 		t.Logf("Failed to connect to gRPC server: %s", host)
@@ -56,7 +56,7 @@ func TestGetPeers(t *testing.T) {
 	includeAllSubnetworks := false
 	var subnetID []byte
 	if subnetworkID != nil {
-		subnetID = subnetworkID.CloneBytes()
+		subnetID = subnetworkID[:]
 	} else {
 		subnetID = nil
 	}

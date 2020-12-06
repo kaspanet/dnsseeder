@@ -164,9 +164,9 @@ func pollPeer(netAdapter *standalone.MinimalNetAdapter, addr *appmessage.NetAddr
 	}
 	msgAddresses := message.(*appmessage.MsgAddresses)
 
-	added := amgr.AddAddresses(msgAddresses.AddrList)
+	added := amgr.AddAddresses(msgAddresses.AddressList)
 	log.Infof("Peer %s sent %d addresses, %d new",
-		peerAddress, len(msgAddresses.AddrList), added)
+		peerAddress, len(msgAddresses.AddressList), added)
 
 	amgr.Attempt(addr.IP)
 	amgr.Good(addr.IP, requiredServices, nil)
