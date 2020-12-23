@@ -7,7 +7,6 @@ package main
 import (
 	"encoding/json"
 	"github.com/kaspanet/kaspad/domain/consensus/model/externalapi"
-	"github.com/kaspanet/kaspad/domain/consensus/utils/subnetworks"
 	"net"
 	"os"
 	"path/filepath"
@@ -227,7 +226,7 @@ func (m *Manager) GoodAddresses(qtype uint16, services appmessage.ServiceFlag, i
 			continue
 		}
 
-		if !includeAllSubnetworks && !subnetworks.IsEqual(node.SubnetworkID, subnetworkID) {
+		if !includeAllSubnetworks && !node.SubnetworkID.Equal(subnetworkID) {
 			continue
 		}
 
