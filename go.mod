@@ -8,7 +8,6 @@ require (
 	github.com/miekg/dns v1.1.25
 	github.com/pkg/errors v0.9.1
 	google.golang.org/grpc v1.33.1
-	google.golang.org/protobuf v1.25.0 // indirect
 )
 
 replace github.com/kaspanet/kaspad => ../kaspad
