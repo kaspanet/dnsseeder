@@ -28,7 +28,7 @@ Some things still don't work and APIs are far from finalized. The code is provid
 
 ## Requirements
 
-Latest version of [Go](http://golang.org) (currently 1.13)
+Latest version of [Go](http://golang.org) (currently 1.15)
 
 ## Getting Started
 
