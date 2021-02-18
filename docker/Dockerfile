@@ -1,5 +1,5 @@
 # -- multistage docker build: stage #1: build stage
-FROM golang:1.15-alpine AS build
+FROM golang:1.16-alpine AS build
 
 RUN mkdir -p /go/src/github.com/kaspanet/dnsseeder
 
@@ -20,14 +20,17 @@ RUN if [ -n "${KASPAD_VERSION}" ]; then \
         # use replace instead of require - to propagate into nested dependancies
         go mod edit -replace github.com/kaspanet/kaspad=github.com/kaspanet/kaspad@$KASPAD_VERSION ;\
     fi
-RUN cp go.mod go.mod.bu
 
 RUN go mod download
 
+RUN cp go.mod go.mod.bu
+RUN cp go.sum go.sum.bu
+
 COPY . .
 
-# Restore go.mod because `COPY . .` overwrote it
+# Restore go.mod and go.sum because `COPY . .` overwrote them
 RUN mv go.mod.bu go.mod
+RUN mv go.sum.bu go.sum
 
 # Run linters and tests
 RUN GOFMT_RESULT=`go fmt ./...`; echo $GOFMT_RESULT; test -z "$GOFMT_RESULT"
