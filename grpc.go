@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"net"
+
 	"github.com/kaspanet/kaspad/domain/consensus/model/externalapi"
 	"github.com/kaspanet/kaspad/domain/consensus/utils/subnetworks"
-	"net"
 
 	"github.com/kaspanet/kaspad/app/appmessage"
 	"github.com/kaspanet/kaspad/infrastructure/network/dnsseed/pb"
@@ -57,7 +58,6 @@ func (s *grpcServer) Stop() {
 }
 
 func (s *grpcServer) GetPeersList(ctx context.Context, req *pb.GetPeersListRequest) (*pb.GetPeersListResponse, error) {
-
 	subnetworkID, err := FromProtobufSubnetworkID(req.SubnetworkID)
 
 	if err != nil {
@@ -65,8 +65,8 @@ func (s *grpcServer) GetPeersList(ctx context.Context, req *pb.GetPeersListReque
 	}
 
 	// mb, we should move DNS-related logic out of manager?
-	ipv4Addresses := s.amgr.GoodAddresses(dns.TypeA, appmessage.ServiceFlag(req.ServiceFlag), req.IncludeAllSubnetworks, subnetworkID)
-	ipv6Addresses := s.amgr.GoodAddresses(dns.TypeAAAA, appmessage.ServiceFlag(req.ServiceFlag), req.IncludeAllSubnetworks, subnetworkID)
+	ipv4Addresses := s.amgr.GoodAddresses(dns.TypeA, req.IncludeAllSubnetworks, subnetworkID)
+	ipv6Addresses := s.amgr.GoodAddresses(dns.TypeAAAA, req.IncludeAllSubnetworks, subnetworkID)
 
 	addresses := ToProtobufAddresses(append(ipv4Addresses, ipv6Addresses...))
 	log.Errorf("ADDRESSES: %+v", addresses)
@@ -95,7 +95,6 @@ func ToProtobufAddresses(addresses []*appmessage.NetAddress) []*pb.NetAddress {
 	for _, addr := range addresses {
 		proto := &pb.NetAddress{
 			Timestamp: addr.Timestamp.UnixSeconds(),
-			Services:  uint64(addr.Services),
 			IP:        []byte(addr.IP),
 			Port:      uint32(addr.Port),
 		}

@@ -31,12 +31,6 @@ import (
 	_ "net/http/pprof"
 )
 
-const (
-	// requiredServices describes the default services that are
-	// required to be supported by outbound peers.
-	requiredServices = appmessage.SFNodeNetwork
-)
-
 var (
 	amgr             *Manager
 	wg               sync.WaitGroup
@@ -86,12 +80,12 @@ func creep() {
 				return
 			}
 
-			knownPeers = append(knownPeers, appmessage.NewNetAddressIPPort(ip, uint16(port), requiredServices))
+			knownPeers = append(knownPeers, appmessage.NewNetAddressIPPort(ip, uint16(port)))
 		}
 
 		amgr.AddAddresses(knownPeers)
 		for _, peer := range knownPeers {
-			amgr.Good(peer.IP, peer.Services, nil)
+			amgr.Good(peer.IP, nil)
 			amgr.Attempt(peer.IP)
 		}
 	}
@@ -101,7 +95,7 @@ func creep() {
 		peers := amgr.Addresses()
 		if len(peers) == 0 && amgr.AddressCount() == 0 {
 			// Add peers discovered through DNS to the address manager.
-			dnsseed.SeedFromDNS(ActiveConfig().NetParams(), "", requiredServices, true,
+			dnsseed.SeedFromDNS(ActiveConfig().NetParams(), "", true,
 				nil, hostLookup, func(addrs []*appmessage.NetAddress) {
 					amgr.AddAddresses(addrs)
 				})
@@ -169,7 +163,7 @@ func pollPeer(netAdapter *standalone.MinimalNetAdapter, addr *appmessage.NetAddr
 		peerAddress, len(msgAddresses.AddressList), added)
 
 	amgr.Attempt(addr.IP)
-	amgr.Good(addr.IP, requiredServices, nil)
+	amgr.Good(addr.IP, nil)
 
 	return nil
 }
@@ -218,7 +212,7 @@ func main() {
 			}
 		}
 		if ip != nil {
-			defaultSeeder = appmessage.NewNetAddressIPPort(ip, uint16(peersDefaultPort), requiredServices)
+			defaultSeeder = appmessage.NewNetAddressIPPort(ip, uint16(peersDefaultPort))
 			amgr.AddAddresses([]*appmessage.NetAddress{defaultSeeder})
 		}
 	}
