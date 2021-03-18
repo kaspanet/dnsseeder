@@ -31,7 +31,7 @@ const (
 
 var (
 	// Default configuration options
-	defaultHomeDir    = util.AppDataDir("dnsseeder", false)
+	defaultHomeDir    = util.AppDir("dnsseeder", false)
 	defaultConfigFile = filepath.Join(defaultHomeDir, defaultConfigFilename)
 	defaultLogFile    = filepath.Join(defaultHomeDir, defaultLogFilename)
 	defaultErrLogFile = filepath.Join(defaultHomeDir, defaultErrLogFilename)

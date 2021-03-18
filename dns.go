@@ -6,19 +6,18 @@ package main
 
 import (
 	"fmt"
-	"github.com/kaspanet/kaspad/domain/consensus/model/externalapi"
-	"github.com/kaspanet/kaspad/domain/consensus/utils/subnetworks"
 	"net"
 	"os"
-	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
 
+	"github.com/kaspanet/kaspad/domain/consensus/model/externalapi"
+	"github.com/kaspanet/kaspad/domain/consensus/utils/subnetworks"
+
 	"github.com/kaspanet/kaspad/infrastructure/network/dnsseed"
 	"github.com/pkg/errors"
 
-	"github.com/kaspanet/kaspad/app/appmessage"
 	"github.com/miekg/dns"
 )
 
@@ -104,38 +103,26 @@ func NewDNSServer(hostname, nameserver, listen string) *DNSServer {
 	}
 }
 
-func (d *DNSServer) extractServicesSubnetworkID(addr *net.UDPAddr, domainName string) (appmessage.ServiceFlag, *externalapi.DomainSubnetworkID, bool, error) {
+func (d *DNSServer) extractSubnetworkID(addr *net.UDPAddr, domainName string) (*externalapi.DomainSubnetworkID, bool, error) {
 	// Domain name may be in following format:
-	//   [n[subnetwork].][xservice.]hostname
-	// where connmgr.SubnetworkIDPrefixChar and connmgr.ServiceFlagPrefixChar are prefexes
-	wantedSF := appmessage.SFNodeNetwork
+	//   [n[subnetwork].]hostname
+	// where connmgr.SubnetworkIDPrefixChar is a prefix
 	var subnetworkID *externalapi.DomainSubnetworkID
 	includeAllSubnetworks := true
 	if d.hostname != domainName {
-		idx := 0
 		labels := dns.SplitDomainName(domainName)
 		if labels[0][0] == dnsseed.SubnetworkIDPrefixChar {
 			includeAllSubnetworks = false
 			if len(labels[0]) > 1 {
-				idx = 1
 				subnetworkID, err := subnetworks.FromString(labels[0][1:])
 				if err != nil {
 					log.Infof("%s: subnetworkid.NewFromStr: %v", addr, err)
-					return wantedSF, subnetworkID, includeAllSubnetworks, err
+					return subnetworkID, includeAllSubnetworks, err
 				}
 			}
 		}
-		if labels[idx][0] == dnsseed.ServiceFlagPrefixChar && len(labels[idx]) > 1 {
-			wantedSFStr := labels[idx][1:]
-			u, err := strconv.ParseUint(wantedSFStr, 10, 64)
-			if err != nil {
-				log.Infof("%s: ParseUint: %v", addr, err)
-				return wantedSF, subnetworkID, includeAllSubnetworks, err
-			}
-			wantedSF = appmessage.ServiceFlag(u)
-		}
 	}
-	return wantedSF, subnetworkID, includeAllSubnetworks, nil
+	return subnetworkID, includeAllSubnetworks, nil
 }
 
 func (d *DNSServer) validateDNSRequest(addr *net.UDPAddr, b []byte) (dnsMsg *dns.Msg, domainName string, atype string, err error) {
@@ -179,8 +166,9 @@ func translateDNSQuestion(addr *net.UDPAddr, dnsMsg *dns.Msg) (string, error) {
 	return atype, nil
 }
 
-func (d *DNSServer) buildDNSResponse(addr *net.UDPAddr, authority dns.RR, dnsMsg *dns.Msg,
-	wantedSF appmessage.ServiceFlag, includeAllSubnetworks bool, subnetworkID *externalapi.DomainSubnetworkID, atype string) ([]byte, error) {
+func (d *DNSServer) buildDNSResponse(addr *net.UDPAddr, authority dns.RR, dnsMsg *dns.Msg, includeAllSubnetworks bool,
+	subnetworkID *externalapi.DomainSubnetworkID, atype string) ([]byte, error) {
+
 	respMsg := dnsMsg.Copy()
 	respMsg.Authoritative = true
 	respMsg.Response = true
@@ -188,7 +176,7 @@ func (d *DNSServer) buildDNSResponse(addr *net.UDPAddr, authority dns.RR, dnsMsg
 	qtype := dnsMsg.Question[0].Qtype
 	if qtype != dns.TypeNS {
 		respMsg.Ns = append(respMsg.Ns, authority)
-		addrs := amgr.GoodAddresses(qtype, wantedSF, includeAllSubnetworks, subnetworkID)
+		addrs := amgr.GoodAddresses(qtype, includeAllSubnetworks, subnetworkID)
 		log.Infof("%s: Sending %d addresses", addr, len(addrs))
 		for _, a := range addrs {
 			rr := fmt.Sprintf("%s 30 IN %s %s", dnsMsg.Question[0].Name, atype, a.IP.String())
@@ -227,15 +215,15 @@ func (d *DNSServer) handleDNSRequest(addr *net.UDPAddr, authority dns.RR, udpLis
 		return
 	}
 
-	wantedSF, subnetworkID, includeAllSubnetworks, err := d.extractServicesSubnetworkID(addr, domainName)
+	subnetworkID, includeAllSubnetworks, err := d.extractSubnetworkID(addr, domainName)
 	if err != nil {
 		return
 	}
 
-	log.Infof("%s: query %d for services %v, subnetwork ID %v",
-		addr, dnsMsg.Question[0].Qtype, wantedSF, subnetworkID)
+	log.Infof("%s: query %d for subnetwork ID %v",
+		addr, dnsMsg.Question[0].Qtype, subnetworkID)
 
-	sendBytes, err := d.buildDNSResponse(addr, authority, dnsMsg, wantedSF, includeAllSubnetworks, subnetworkID, atype)
+	sendBytes, err := d.buildDNSResponse(addr, authority, dnsMsg, includeAllSubnetworks, subnetworkID, atype)
 	if err != nil {
 		return
 	}

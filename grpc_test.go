@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/kaspanet/kaspad/domain/consensus/model/externalapi"
-	"github.com/kaspanet/kaspad/infrastructure/config"
 	"net"
 	"os"
 	"testing"
+
+	"github.com/kaspanet/kaspad/domain/consensus/model/externalapi"
+	"github.com/kaspanet/kaspad/infrastructure/config"
 
 	"github.com/kaspanet/kaspad/app/appmessage"
 	"github.com/kaspanet/kaspad/infrastructure/network/dnsseed/pb"
@@ -33,9 +34,9 @@ func TestGetPeers(t *testing.T) {
 	}
 
 	ip := net.IP([]byte{203, 105, 20, 21})
-	netAddress := appmessage.NewNetAddressIPPort(ip, uint16(peersDefaultPort), requiredServices)
+	netAddress := appmessage.NewNetAddressIPPort(ip, uint16(peersDefaultPort))
 	amgr.AddAddresses([]*appmessage.NetAddress{netAddress})
-	amgr.Good(ip, appmessage.SFNodeNetwork, nil)
+	amgr.Good(ip, nil)
 
 	host := "localhost:3737"
 	grpcServer := NewGRPCServer(amgr)
@@ -52,7 +53,6 @@ func TestGetPeers(t *testing.T) {
 	}
 
 	client := pb.NewPeerServiceClient(conn)
-	serviceFlag := appmessage.SFNodeNetwork
 	includeAllSubnetworks := false
 	var subnetID []byte
 	if subnetworkID != nil {
@@ -62,7 +62,6 @@ func TestGetPeers(t *testing.T) {
 	}
 
 	req := &pb.GetPeersListRequest{
-		ServiceFlag:           uint64(serviceFlag),
 		SubnetworkID:          subnetID,
 		IncludeAllSubnetworks: includeAllSubnetworks,
 	}

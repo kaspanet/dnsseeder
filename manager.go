@@ -6,23 +6,21 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/kaspanet/kaspad/domain/consensus/model/externalapi"
 	"net"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/kaspanet/kaspad/app/appmessage"
+	"github.com/kaspanet/kaspad/domain/consensus/model/externalapi"
 	"github.com/miekg/dns"
+	"github.com/pkg/errors"
 )
 
 // Node repesents a node in the Kaspa network
 type Node struct {
 	Addr         *appmessage.NetAddress
-	Services     appmessage.ServiceFlag
 	LastAttempt  time.Time
 	LastSuccess  time.Time
 	LastSeen     time.Time
@@ -206,8 +204,8 @@ func (m *Manager) AddressCount() int {
 
 // GoodAddresses returns good working IPs that match both the
 // passed DNS query type and have the requested services.
-func (m *Manager) GoodAddresses(qtype uint16, services appmessage.ServiceFlag, includeAllSubnetworks bool,
-	subnetworkID *externalapi.DomainSubnetworkID) []*appmessage.NetAddress {
+func (m *Manager) GoodAddresses(qtype uint16, includeAllSubnetworks bool, subnetworkID *externalapi.DomainSubnetworkID,
+) []*appmessage.NetAddress {
 	addrs := make([]*appmessage.NetAddress, 0, defaultMaxAddresses)
 	i := defaultMaxAddresses
 
@@ -241,10 +239,6 @@ func (m *Manager) GoodAddresses(qtype uint16, services appmessage.ServiceFlag, i
 			continue
 		}
 
-		// Does the node have the requested services?
-		if node.Services&services != services {
-			continue
-		}
 		addrs = append(addrs, node.Addr)
 		i--
 	}
@@ -264,11 +258,10 @@ func (m *Manager) Attempt(ip net.IP) {
 }
 
 // Good updates the last successful connection attempt for the specified ip address to now
-func (m *Manager) Good(ip net.IP, services appmessage.ServiceFlag, subnetworkid *externalapi.DomainSubnetworkID) {
+func (m *Manager) Good(ip net.IP, subnetworkid *externalapi.DomainSubnetworkID) {
 	m.mtx.Lock()
 	node, exists := m.nodes[ip.String()]
 	if exists {
-		node.Services = services
 		node.LastSuccess = time.Now()
 		node.SubnetworkID = subnetworkid
 	}
