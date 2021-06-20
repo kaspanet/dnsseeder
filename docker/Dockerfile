@@ -32,6 +32,8 @@ COPY . .
 RUN mv go.mod.bu go.mod
 RUN mv go.sum.bu go.sum
 
+RUN go mod tidy
+
 # Run linters and tests
 RUN GOFMT_RESULT=`go fmt ./...`; echo $GOFMT_RESULT; test -z "$GOFMT_RESULT"
 RUN go vet ./...
