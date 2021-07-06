@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"os"
 
 	"github.com/kaspanet/kaspad/infrastructure/logger"
@@ -39,9 +38,5 @@ func initLog(logFile, errLogFile string) {
 		os.Exit(1)
 	}
 
-	level, ok := logger.LevelFromString("debug")
-	if !ok {
-		panic(errors.Errorf("Invalid log level %s", level))
-	}
-	log.SetLevel(level)
+	log.SetLevel(logger.LevelDebug)
 }
