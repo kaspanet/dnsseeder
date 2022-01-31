@@ -1,6 +1,6 @@
 DNSSeeder
 ====
-Warning: This is pre-alpha software. There's no guarantee anything works.
+This project is currently under active development and is in Beta state.
 ====
 
 [![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](https://choosealicense.com/licenses/isc/)
@@ -22,8 +22,7 @@ random selection of the reliable nodes it knows about.
 
 It is written in Go (golang).
 
-This project is currently under active development and is in a pre-Alpha state. 
-Some things still don't work and APIs are far from finalized. The code is provided for reference only.
+This project is currently under active development and is in Beta state.
 
 
 ## Requirements
