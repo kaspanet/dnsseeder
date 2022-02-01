@@ -240,17 +240,24 @@ func (m *Manager) prunePeers() {
 	var count int
 	now := time.Now()
 	m.mtx.Lock()
+
+	lastSeenAbovePruneExpire := func(node *Node) bool {
+		return now.Sub(node.LastSeen) > pruneExpireTimeout
+	}
+	hadAttemptsButNoSuccess := func(node *Node) bool {
+		return !node.LastAttempt.IsZero() && node.LastSuccess.IsZero()
+	}
+	hadSuccessButLongTimeAgo := func(node *Node) bool {
+		return !node.LastSuccess.IsZero() && now.Sub(node.LastSuccess) > pruneExpireTimeout
+	}
+
 	for k, node := range m.nodes {
-		if now.Sub(node.LastSeen) > pruneExpireTimeout {
+		if lastSeenAbovePruneExpire(node) ||
+			hadAttemptsButNoSuccess(node) ||
+			hadSuccessButLongTimeAgo(node) {
+
 			delete(m.nodes, k)
 			count++
-			continue
-		}
-		if !node.LastSuccess.IsZero() &&
-			now.Sub(node.LastSuccess) > pruneExpireTimeout {
-			delete(m.nodes, k)
-			count++
-			continue
 		}
 	}
 	l := len(m.nodes)
