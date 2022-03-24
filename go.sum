@@ -58,8 +58,8 @@ github.com/kaspanet/go-muhash v0.0.4 h1:CQrm1RTJpQy+h4ZFjj9qq42K5fmA5QTGifzb47p4
 github.com/kaspanet/go-muhash v0.0.4/go.mod h1:10bPW5mO1vNHPSejaAh9ZTtLZE16jzEvgaP7f3Q5s/8=
 github.com/kaspanet/go-secp256k1 v0.0.7 h1:WHnrwopKB6ZeHSbdAwwxNhTqflm56XT1mM6LF4/OvOs=
 github.com/kaspanet/go-secp256k1 v0.0.7/go.mod h1:cFbxhxKkxqHX5eIwUGKARkph19PehipDPJejWB+H0jM=
-github.com/kaspanet/kaspad v0.11.13 h1:kWBwgHBtHR4+SmO7mcPOGmBQeQNtySNPPj53u/ew56A=
-github.com/kaspanet/kaspad v0.11.13/go.mod h1:jsQbDfoq2IfNXbx7f/5JwqhPkLNUSAEavcuJtQ3asYw=
+github.com/kaspanet/kaspad v0.11.14 h1:manHqYzAwKtjNXj/TQ0bmf/TVN+pjh93oYdWKN7GDLk=
+github.com/kaspanet/kaspad v0.11.14/go.mod h1:jsQbDfoq2IfNXbx7f/5JwqhPkLNUSAEavcuJtQ3asYw=
 github.com/kkdai/bstream v0.0.0-20161212061736-f391b8402d23/go.mod h1:J+Gs4SYgM6CZQHDETBtE9HaSEkGmuNXF86RwHhHUvq4=
 github.com/miekg/dns v1.1.25 h1:dFwPR6SfLtrSwgDcIq2bcU/gVutB4sNApq2HBdqcakg=
 github.com/miekg/dns v1.1.25/go.mod h1:bPDLeHnStXmXAq1m/Ch/hvfNHr14JKNPMBo3VZKjuso=
