@@ -30,11 +30,10 @@ const (
 )
 
 var (
-	// Default configuration options
-	defaultHomeDir    = util.AppDir("dnsseeder", false)
-	defaultConfigFile = filepath.Join(defaultHomeDir, defaultConfigFilename)
-	defaultLogFile    = filepath.Join(defaultHomeDir, defaultLogFilename)
-	defaultErrLogFile = filepath.Join(defaultHomeDir, defaultErrLogFilename)
+	// DefaultAppDir is the default home directory for dnsseeder.
+	DefaultAppDir = util.AppDir("dnsseeder", false)
+
+	defaultConfigFile = filepath.Join(DefaultAppDir, defaultConfigFilename)
 )
 
 var activeConfig *ConfigFlags
@@ -51,14 +50,30 @@ type ConfigFlags struct {
 	Host        string `short:"H" long:"host" description:"Seed DNS address"`
 	Listen      string `long:"listen" short:"l" description:"Listen on address:port"`
 	Nameserver  string `short:"n" long:"nameserver" description:"hostname of nameserver"`
-	Seeder      string `short:"s" long:"default-seeder" description:"IP address of a  working node"`
+	Seeder      string `short:"s" long:"default-seeder" description:"IP address of a working node, optionally with a port specifier"`
 	Profile     string `long:"profile" description:"Enable HTTP profiling on given port -- NOTE port must be between 1024 and 65536"`
 	GRPCListen  string `long:"grpclisten" description:"Listen gRPC requests on address:port"`
+	AppDir      string
 	config.NetworkFlags
 }
 
-func loadConfig() (*ConfigFlags, error) {
-	err := os.MkdirAll(defaultHomeDir, 0700)
+// cleanAndExpandPath expands environment variables and leading ~ in the
+// passed path, cleans the result, and returns it.
+func cleanAndExpandPath(path string) string {
+	// Expand initial ~ to OS specific home directory.
+	if strings.HasPrefix(path, "~") {
+		homeDir := filepath.Dir(DefaultAppDir)
+		path = strings.Replace(path, "~", homeDir, 1)
+	}
+
+	// NOTE: The os.ExpandEnv doesn't work with Windows-style %VARIABLE%,
+	// but they variables can still be expanded via POSIX-style $VARIABLE.
+	return filepath.Clean(os.ExpandEnv(path))
+}
+
+// Try to build the provided path if it does not exist yet.
+func createPathIfNeeded(path string) error  {
+	err := os.MkdirAll(path, 0700)
 	if err != nil {
 		// Show a nicer error message if it's because a symlink is
 		// linked to a directory that does not exist (probably because
@@ -74,6 +89,14 @@ func loadConfig() (*ConfigFlags, error) {
 		str := "failed to create home directory: %v"
 		err := errors.Wrap(err, str)
 		fmt.Fprintln(os.Stderr, err)
+		return err
+	}
+	return nil
+}
+
+func loadConfig() (*ConfigFlags, error) {
+	err := createPathIfNeeded(DefaultAppDir)
+	if err != nil {
 		return nil, err
 	}
 
@@ -148,6 +171,22 @@ func loadConfig() (*ConfigFlags, error) {
 		return nil, err
 	}
 
+	// Append the network type to the app directory so it is "namespaced"
+	// per network.
+	// All data is specific to a network, so namespacing the data directory
+	// means each individual piece of serialized data does not have to
+	// worry about changing names per network and such.
+	activeConfig.AppDir = filepath.Join(DefaultAppDir, activeConfig.NetParams().Name)
+	activeConfig.AppDir = cleanAndExpandPath(activeConfig.AppDir)
+
+	appLogFile := filepath.Join(activeConfig.AppDir, defaultLogFilename)
+	appErrLogFile := filepath.Join(activeConfig.AppDir, defaultErrLogFilename)
+
+	err = createPathIfNeeded(activeConfig.AppDir)
+	if err != nil {
+		return nil, err
+	}
+
 	if activeConfig.Profile != "" {
 		profilePort, err := strconv.Atoi(activeConfig.Profile)
 		if err != nil || profilePort < 1024 || profilePort > 65535 {
@@ -155,7 +194,7 @@ func loadConfig() (*ConfigFlags, error) {
 		}
 	}
 
-	initLog(defaultLogFile, defaultErrLogFile)
+	initLog(appLogFile, appErrLogFile)
 
 	return activeConfig, nil
 }

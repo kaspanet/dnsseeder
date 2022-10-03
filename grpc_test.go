@@ -27,7 +27,7 @@ func TestGetPeers(t *testing.T) {
 
 	peersDefaultPort = 1313
 
-	amgr, err = NewManager(defaultHomeDir)
+	amgr, err = NewManager(DefaultAppDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "NewManager: %v\n", err)
 		os.Exit(1)
