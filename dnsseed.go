@@ -203,13 +203,13 @@ func main() {
 		seederIp := cfg.Seeder
 		seederPort := peersDefaultPort
 
-		addressPart := strings.Split(cfg.Seeder, ":")
-		if len(addressPart) == 2 {
-			seederIp = addressPart[0]
-
-			seederPort, err = strconv.Atoi(addressPart[1])
+		// Try to split seeder host and port
+		foundIp, foundPort, err := net.SplitHostPort(cfg.Seeder)
+		if (err == nil) {
+			seederIp = foundIp
+			seederPort, err = strconv.Atoi(foundPort)
 			if err != nil {
-				log.Errorf("Invalid seeder port: %s", addressPart[1])
+				log.Errorf("Invalid seeder port: %s", foundPort)
 				return
 			}
 		}
