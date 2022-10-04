@@ -53,7 +53,11 @@ type ConfigFlags struct {
 	Seeder      string `short:"s" long:"default-seeder" description:"IP address of a working node, optionally with a port specifier"`
 	Profile     string `long:"profile" description:"Enable HTTP profiling on given port -- NOTE port must be between 1024 and 65536"`
 	GRPCListen  string `long:"grpclisten" description:"Listen gRPC requests on address:port"`
+
+	// This field is currently not user configurable.
+	// Should be nice to make it configurable in a later version.
 	AppDir      string
+
 	config.NetworkFlags
 }
 
