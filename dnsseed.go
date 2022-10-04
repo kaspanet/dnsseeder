@@ -185,7 +185,7 @@ func main() {
 		profiling.Start(cfg.Profile, log)
 	}
 
-	amgr, err = NewManager(defaultHomeDir)
+	amgr, err = NewManager(cfg.AppDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "NewManager: %v\n", err)
 		os.Exit(1)
@@ -198,20 +198,36 @@ func main() {
 	}
 
 	if len(cfg.Seeder) != 0 {
-		ip := net.ParseIP(cfg.Seeder)
-		if ip == nil {
-			hostAddrs, err := net.LookupHost(cfg.Seeder)
+		// Prepare the seeder address, supporting either a simple IP with default network port
+		// or a full IP:port format
+		seederIp := cfg.Seeder
+		seederPort := peersDefaultPort
+
+		// Try to split seeder host and port
+		foundIp, foundPort, err := net.SplitHostPort(cfg.Seeder)
+		if (err == nil) {
+			seederIp = foundIp
+			seederPort, err = strconv.Atoi(foundPort)
 			if err != nil {
-				log.Warnf("Failed to resolve seed host: %v, %v, ignoring", cfg.Seeder, err)
+				log.Errorf("Invalid seeder port: %s", foundPort)
+				return
+			}
+		}
+
+		ip := net.ParseIP(seederIp)
+		if ip == nil {
+			hostAddrs, err := net.LookupHost(seederIp)
+			if err != nil {
+				log.Warnf("Failed to resolve seed host: %v, %v, ignoring", seederIp, err)
 			} else {
 				ip = net.ParseIP(hostAddrs[0])
 				if ip == nil {
-					log.Warnf("Failed to resolve seed host: %v, ignoring", cfg.Seeder)
+					log.Warnf("Failed to resolve seed host: %v, ignoring", seederIp)
 				}
 			}
 		}
 		if ip != nil {
-			defaultSeeder = appmessage.NewNetAddressIPPort(ip, uint16(peersDefaultPort))
+			defaultSeeder = appmessage.NewNetAddressIPPort(ip, uint16(seederPort))
 			amgr.AddAddresses([]*appmessage.NetAddress{defaultSeeder})
 		}
 	}
