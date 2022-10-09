@@ -1,5 +1,5 @@
 # -- multistage docker build: stage #1: build stage
-FROM golang:1.16-alpine AS build
+FROM golang:1.18-alpine AS build
 
 RUN mkdir -p /go/src/github.com/kaspanet/dnsseeder
 
@@ -31,7 +31,7 @@ COPY . .
 RUN mv go.mod.bu go.mod
 RUN mv go.sum.bu go.sum
 
-RUN go mod tidy.
+RUN go mod tidy
 
 RUN GOOS=linux go build -a -installsuffix cgo -o dnsseeder .
 
