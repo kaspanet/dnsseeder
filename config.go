@@ -101,7 +101,6 @@ func loadConfig() (*ConfigFlags, error) {
 		AppDir:     DefaultAppDir,
 		Listen:     normalizeAddress("localhost", defaultListenPort),
 		GRPCListen: normalizeAddress("localhost", defaultGrpcListenPort),
-		NetSuffix:  10,
 	}
 
 	preCfg := activeConfig
