@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/kaspanet/kaspad/app/appmessage"
 	"net"
 	"os"
 	"strings"
@@ -178,6 +179,10 @@ func (d *DNSServer) buildDNSResponse(addr *net.UDPAddr, authority dns.RR, dnsMsg
 		respMsg.Ns = append(respMsg.Ns, authority)
 		addrs := amgr.GoodAddresses(qtype, includeAllSubnetworks, subnetworkID)
 		log.Infof("%s: Sending %d addresses", addr, len(addrs))
+		if len(addrs) == 0 && qtype == dns.TypeAAAA {
+			// Musl (Alpine) requires non-empty result (work-around):
+			addrs = append(addrs, appmessage.NewNetAddressIPPort(net.ParseIP("100::"), uint16(0)))
+		}
 		for _, a := range addrs {
 			rr := fmt.Sprintf("%s 30 IN %s %s", dnsMsg.Question[0].Name, atype, a.IP.String())
 			newRR, err := dns.NewRR(rr)
