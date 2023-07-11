@@ -14,8 +14,9 @@ var (
 	spawn      = panics.GoroutineWrapperFunc(log)
 )
 
-func initLog(noLogFiles bool, logFile, errLogFile string) {
-	err := backendLog.AddLogWriter(os.Stdout, logger.LevelInfo)
+func initLog(noLogFiles bool, logLevel, logFile, errLogFile string) {
+	level, _ := logger.LevelFromString(logLevel)
+	err := backendLog.AddLogWriter(os.Stdout, level)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error adding stdout to the loggerfor level %s: %s", logger.LevelWarn, err)
 		os.Exit(1)

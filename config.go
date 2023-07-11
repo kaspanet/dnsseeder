@@ -56,6 +56,7 @@ type ConfigFlags struct {
 	GRPCListen  string `long:"grpclisten" description:"Listen gRPC requests on address:port"`
 	NetSuffix   uint16 `long:"netsuffix" description:"Testnet network suffix number"`
 	NoLogFiles  bool   `long:"nologfiles" description:"Disable logging to file"`
+	LogLevel    string `long:"loglevel" description:"Loglevel for stdout (console). Default: Info"`
 	config.NetworkFlags
 }
 
@@ -205,7 +206,7 @@ func loadConfig() (*ConfigFlags, error) {
 		}
 	}
 
-	initLog(activeConfig.NoLogFiles, appLogFile, appErrLogFile)
+	initLog(activeConfig.NoLogFiles, activeConfig.LogLevel, appLogFile, appErrLogFile)
 
 	return activeConfig, nil
 }
