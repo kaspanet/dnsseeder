@@ -15,10 +15,14 @@ var (
 )
 
 func initLog(noLogFiles bool, logLevel, logFile, errLogFile string) {
-	level, _ := logger.LevelFromString(logLevel)
+	level, ok := logger.LevelFromString(logLevel)
+	if !ok {
+		fmt.Fprintf(os.Stderr, "Invalid loglevel: %s", logLevel)
+		os.Exit(1)
+	}
 	err := backendLog.AddLogWriter(os.Stdout, level)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error adding stdout to the loggerfor level %s: %s", logger.LevelWarn, err)
+		fmt.Fprintf(os.Stderr, "Error adding stdout to the logger for level %s: %s", logger.LevelWarn, err)
 		os.Exit(1)
 	}
 
