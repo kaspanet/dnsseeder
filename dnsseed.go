@@ -125,7 +125,7 @@ func creep() {
 
 				err := pollPeer(netAdapter, addr)
 				if err != nil {
-					log.Warnf(err.Error())
+					log.Debugf(err.Error())
 					if defaultSeeder != nil && addr == defaultSeeder {
 						panics.Exit(log, "failed to poll default seeder")
 					}
