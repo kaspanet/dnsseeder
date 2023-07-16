@@ -206,6 +206,9 @@ func loadConfig() (*ConfigFlags, error) {
 		}
 	}
 
+	if activeConfig.LogLevel == "" {
+		activeConfig.LogLevel = "Info"
+	}
 	initLog(activeConfig.NoLogFiles, activeConfig.LogLevel, appLogFile, appErrLogFile)
 
 	return activeConfig, nil
