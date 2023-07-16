@@ -237,7 +237,7 @@ out:
 }
 
 func (m *Manager) prunePeers() {
-	var count int
+	var pruned, good int
 	now := time.Now()
 	m.mtx.Lock()
 
@@ -250,6 +250,9 @@ func (m *Manager) prunePeers() {
 	hadSuccessButLongTimeAgo := func(node *Node) bool {
 		return !node.LastSuccess.IsZero() && now.Sub(node.LastSuccess) > pruneExpireTimeout
 	}
+	hadSuccessRecently := func(node *Node) bool {
+		return !node.LastSuccess.IsZero() && now.Sub(node.LastSuccess) < pruneExpireTimeout
+	}
 
 	for k, node := range m.nodes {
 		if lastSeenAbovePruneExpire(node) ||
@@ -257,13 +260,15 @@ func (m *Manager) prunePeers() {
 			hadSuccessButLongTimeAgo(node) {
 
 			delete(m.nodes, k)
-			count++
+			pruned++
+		} else if hadSuccessRecently(node) {
+			good++
 		}
 	}
-	l := len(m.nodes)
+	total := len(m.nodes)
 	m.mtx.Unlock()
 
-	log.Infof("Pruned %d addresses: %d remaining", count, l)
+	log.Infof("Pruned %d addresses. %d good of %d known", pruned, good, total)
 }
 
 func (m *Manager) deserializePeers() error {
