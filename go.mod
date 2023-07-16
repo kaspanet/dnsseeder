@@ -7,7 +7,7 @@ require (
 	github.com/kaspanet/kaspad v0.12.7
 	github.com/miekg/dns v1.1.25
 	github.com/pkg/errors v0.9.1
-	google.golang.org/grpc v1.38.0
+	google.golang.org/grpc v1.53.0
 )
 
 require (
@@ -17,9 +17,9 @@ require (
 	github.com/jrick/logrotate v1.0.0 // indirect
 	github.com/kaspanet/go-muhash v0.0.4 // indirect
 	golang.org/x/crypto v0.1.0 // indirect
-	golang.org/x/net v0.1.0 // indirect
-	golang.org/x/sys v0.1.0 // indirect
-	golang.org/x/text v0.4.0 // indirect
-	google.golang.org/genproto v0.0.0-20210604141403-392c879c8b08 // indirect
+	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/sys v0.4.0 // indirect
+	golang.org/x/text v0.6.0 // indirect
+	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )
