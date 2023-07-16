@@ -27,6 +27,7 @@ const (
 	defaultErrLogFilename = "dnsseeder_err.log"
 	defaultListenPort     = "5354"
 	defaultGrpcListenPort = "3737"
+	defaultLogLevel       = "info"
 )
 
 var (
@@ -56,7 +57,7 @@ type ConfigFlags struct {
 	GRPCListen  string `long:"grpclisten" description:"Listen gRPC requests on address:port"`
 	NetSuffix   uint16 `long:"netsuffix" description:"Testnet network suffix number"`
 	NoLogFiles  bool   `long:"nologfiles" description:"Disable logging to file"`
-	LogLevel    string `long:"loglevel" description:"Loglevel for stdout (console). Default: Info"`
+	LogLevel    string `long:"loglevel" description:"Loglevel for stdout (console). Default: info"`
 	config.NetworkFlags
 }
 
@@ -103,6 +104,7 @@ func loadConfig() (*ConfigFlags, error) {
 		AppDir:     DefaultAppDir,
 		Listen:     normalizeAddress("localhost", defaultListenPort),
 		GRPCListen: normalizeAddress("localhost", defaultGrpcListenPort),
+		LogLevel:   defaultLogLevel,
 	}
 
 	preCfg := activeConfig
