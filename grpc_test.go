@@ -36,7 +36,7 @@ func TestGetPeers(t *testing.T) {
 	ip := net.IP([]byte{203, 105, 20, 21})
 	netAddress := appmessage.NewNetAddressIPPort(ip, uint16(peersDefaultPort))
 	amgr.AddAddresses([]*appmessage.NetAddress{netAddress})
-	amgr.Good(ip, nil)
+	amgr.Good(netAddress, nil, nil)
 
 	host := "localhost:3737"
 	grpcServer := NewGRPCServer(amgr)
